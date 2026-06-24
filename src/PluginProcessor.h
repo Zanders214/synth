@@ -6,6 +6,7 @@
 #include "dsp/Voice.h"
 #include "dsp/Arpeggiator.h"
 #include "dsp/fx/FxChain.h"
+#include "PresetManager.h"
 
 //==============================================================================
 // ZandersWave — Serum 2-class wavetable synthesizer.
@@ -37,11 +38,13 @@ public:
     double getTailLengthSeconds() const override { return 0.0; }
 
     //==========================================================================
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return {}; }
+    int getNumPrograms() override { return juce::jmax (1, presets.getNumFactory()); }
+    int getCurrentProgram() override { return currentProgram; }
+    void setCurrentProgram (int index) override { currentProgram = index; presets.applyFactory (index); }
+    const juce::String getProgramName (int index) override { return presets.factoryName (index); }
     void changeProgramName (int, const juce::String&) override {}
+
+    zw::PresetManager& getPresetManager() { return presets; }
 
     //==========================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
@@ -56,6 +59,8 @@ private:
     zw::Wavetable      wavetable;
     zw::ParamRefs      paramRefs;
     zw::ModMatrix      modMatrix;
+    zw::PresetManager  presets { *this, apvts, modMatrix };
+    int                currentProgram = 0;
     zw::Arpeggiator    arp;
     std::atomic<double> currentBpm { 120.0 };
     std::atomic<double> lastNoteFreq { 440.0 };

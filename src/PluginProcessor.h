@@ -4,6 +4,7 @@
 #include "dsp/Wavetable.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/Voice.h"
+#include "dsp/fx/FxChain.h"
 
 //==============================================================================
 // ZandersWave — Serum 2-class wavetable synthesizer.
@@ -56,6 +57,7 @@ private:
     zw::ModMatrix      modMatrix;
     std::atomic<double> currentBpm { 120.0 };
     juce::Synthesiser  synth;
+    zw::FxChain        fxChain;
     juce::dsp::Gain<float> masterGain;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZandersWaveAudioProcessor)

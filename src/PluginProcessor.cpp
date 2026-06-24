@@ -62,6 +62,9 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);
 
+    // Merge on-screen keyboard input into the MIDI stream.
+    keyboardState.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
+
     // Arpeggiator rewrites the MIDI stream (pass-through when disabled).
     arp.process (midi, buffer.getNumSamples(), currentBpm.load());
 
@@ -77,6 +80,28 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float gainDb = norm * 24.0f - 24.0f;
     masterGain.setGainLinear (juce::Decibels::decibelsToGain (gainDb, -24.0f));
     masterGain.process (juce::dsp::ProcessContextReplacing<float> (block));
+
+    // ---- Audio->UI taps: scope ring + output peak + voice count ----
+    const int   ns = buffer.getNumSamples();
+    const auto* L  = buffer.getReadPointer (0);
+    const auto* R  = buffer.getNumChannels() > 1 ? buffer.getReadPointer (1) : L;
+    int wp = scopeWritePos.load();
+    float peak = 0.0f;
+    for (int i = 0; i < ns; ++i)
+    {
+        const float m = 0.5f * (L[i] + R[i]);
+        scopeRing[(size_t) (wp & (kScopeSize - 1))] = m;
+        ++wp;
+        peak = juce::jmax (peak, std::abs (m));
+    }
+    scopeWritePos.store (wp);
+    outputPeak.store (juce::jmax (peak, outputPeak.load() * 0.85f));   // light decay
+
+    int voices = 0;
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+        if (synth.getVoice (i)->isVoiceActive())
+            ++voices;
+    activeVoices.store (voices);
 }
 
 //==============================================================================

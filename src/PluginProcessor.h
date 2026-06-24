@@ -1,6 +1,8 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
+#include <atomic>
 #include "dsp/Wavetable.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/Voice.h"
@@ -46,12 +48,20 @@ public:
 
     zw::PresetManager& getPresetManager() { return presets; }
 
+    // ---- Lightweight audio->UI taps (read on the message thread) ----
+    static constexpr int kScopeSize = 1024;
+    const float* getScopeRing() const noexcept { return scopeRing.data(); }
+    int   getScopeWritePos() const noexcept { return scopeWritePos.load(); }
+    float getOutputPeak() const noexcept { return outputPeak.load(); }
+    int   getActiveVoiceCount() const noexcept { return activeVoices.load(); }
+
     //==========================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==========================================================================
     juce::AudioProcessorValueTreeState apvts;
+    juce::MidiKeyboardState keyboardState;   // drives the on-screen keyboard
 
 private:
     static constexpr int kNumVoices = 16;
@@ -67,6 +77,12 @@ private:
     juce::Synthesiser  synth;
     zw::FxChain        fxChain;
     juce::dsp::Gain<float> masterGain;
+
+    // audio->UI taps
+    std::array<float, kScopeSize> scopeRing {};
+    std::atomic<int>   scopeWritePos { 0 };
+    std::atomic<float> outputPeak { 0.0f };
+    std::atomic<int>   activeVoices { 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZandersWaveAudioProcessor)
 };

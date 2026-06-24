@@ -48,6 +48,13 @@ juce_add_plugin(ZandersWave
 
 juce_generate_juce_header(ZandersWave)
 
+# ---- Bundled assets (fonts) -> BinaryData ----------------------------------
+juce_add_binary_data(ZandersWaveData
+    SOURCES
+        assets/fonts/SpaceGroteskVariable.ttf
+        assets/fonts/JetBrainsMonoVariable.ttf)
+set_target_properties(ZandersWaveData PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
 # ---- Sources (globbed so new milestone files are picked up on reconfigure) --
 file(GLOB_RECURSE ZW_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
@@ -69,6 +76,7 @@ target_compile_definitions(ZandersWave PUBLIC
 # (audio_devices + the keyboard component are needed by the Standalone target).
 target_link_libraries(ZandersWave
     PRIVATE
+        ZandersWaveData
         juce::juce_audio_utils
         juce::juce_audio_processors
         juce::juce_dsp

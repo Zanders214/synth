@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      BUILD_WRAPPER_OUT_DIR: bw-output
+      SONAR_HOST_URL: https://sonarcloud.io
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,8 +25,8 @@ jobs:
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install SonarCloud build-wrapper & scanner
-        uses: SonarSource/sonarcloud-github-c-cpp@v3
+      - name: Install SonarQube build-wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v8
 
       - name: Configure (CMake + Ninja, Release)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -34,10 +34,10 @@ jobs:
       # Build under the build-wrapper so the C/C++ analyzer learns the exact
       # compiler invocations. This step also validates the build on every push.
       - name: Build (wrapped)
-        run: build-wrapper-win-x86-64 --out-dir "$env:BUILD_WRAPPER_OUT_DIR" cmake --build build --parallel
+        run: build-wrapper-win-x86-64 --out-dir bw-output cmake --build build --parallel
 
       # Runs only when the SONAR_TOKEN secret is present, so the build stays green
-      # until SonarCloud is fully wired up.
-      - name: SonarCloud scan
+      # until SonarCloud is fully wired up. Reads sonar-project.properties.
+      - name: SonarQube Cloud scan
         if: env.SONAR_TOKEN != ''
-        run: sonar-scanner --define sonar.cfamily.build-wrapper-output="$env:BUILD_WRAPPER_OUT_DIR"
+        uses: SonarSource/sonarqube-scan-action@v8

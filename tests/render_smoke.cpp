@@ -7,8 +7,10 @@
 #include "Parameters.h"
 #include "dsp/Wavetable.h"
 #include "dsp/ParamRefs.h"
+#include "dsp/ModMatrix.h"
 #include "dsp/Voice.h"
 
+#include <atomic>
 #include <cstdio>
 #include <cmath>
 
@@ -50,13 +52,16 @@ int main()
     zw::Wavetable wt;
     wt.generateBasicShapes (64);
 
+    zw::ModMatrix matrix;                 // default routes
+    std::atomic<double> bpm { 120.0 };
+
     const double sr = 48000.0;
     const int    bs = 512;
 
     juce::Synthesiser synth;
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < 16; ++i)
-        synth.addVoice (new zw::ZWVoice (refs, wt));
+        synth.addVoice (new zw::ZWVoice (refs, wt, matrix, bpm));
     synth.setCurrentPlaybackSampleRate (sr);
 
     juce::AudioBuffer<float> buffer (2, bs);

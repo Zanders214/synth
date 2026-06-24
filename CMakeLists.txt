@@ -91,6 +91,7 @@ target_sources(render_smoke PRIVATE
     src/Parameters.cpp
     src/dsp/Wavetable.cpp
     src/dsp/ParamRefs.cpp
+    src/dsp/ModMatrix.cpp
     src/dsp/Voice.cpp)
 target_include_directories(render_smoke PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(render_smoke PRIVATE

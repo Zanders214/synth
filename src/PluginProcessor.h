@@ -53,6 +53,8 @@ private:
 
     zw::Wavetable      wavetable;
     zw::ParamRefs      paramRefs;
+    zw::ModMatrix      modMatrix;
+    std::atomic<double> currentBpm { 120.0 };
     juce::Synthesiser  synth;
     juce::dsp::Gain<float> masterGain;
 

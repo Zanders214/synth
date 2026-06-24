@@ -1,6 +1,8 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
+#include <atomic>
 #include <vector>
 
 namespace zw
@@ -11,7 +13,12 @@ namespace zw
 // Per block/voice the modulator values are gathered into a source array and
 // summed per destination; the voice then applies the sum on top of each
 // destination's normalised base value. Source/dest names match the prototype
-// for state compatibility. (Live editing + lock-free swap arrives with M7.)
+// for state compatibility.
+//
+// Thread-safety: the audio thread reads routes every block via computeDestSums
+// while the message thread can rewrite them (preset/state load). Routes live in
+// a lock-free double buffer — writers fill the inactive buffer and publish it
+// with a single atomic store; the audio thread reads the published buffer.
 //==============================================================================
 enum class ModSource
 {
@@ -39,36 +46,46 @@ struct ModRoute
 class ModMatrix
 {
 public:
+    static constexpr int kMaxRoutes = 256;
+
     ModMatrix() { seedDefaults(); }
 
-    void clear() { routes.clear(); }
+    void clear()                                  { publish ({}); }
     void seedDefaults();
-
     void addRoute (ModSource s, ModDest d, float amount);
     void removeRoute (int index);
-    const std::vector<ModRoute>& getRoutes() const noexcept { return routes; }
-    int  size() const noexcept { return (int) routes.size(); }
 
-    // destSums must point to at least kNumModDests floats; srcValues to kNumModSources.
+    std::vector<ModRoute> getRoutes() const;      // snapshot (UI/serialisation)
+    int  size() const noexcept { return buffers[(size_t) activeIdx.load (std::memory_order_acquire)].count; }
+
+    // Audio-thread read: lock-free snapshot of the published routes.
     void computeDestSums (const float* srcValues, float* destSums) const noexcept
     {
         for (int d = 0; d < kNumModDests; ++d) destSums[d] = 0.0f;
-        for (const auto& r : routes)
+        const auto& buf = buffers[(size_t) activeIdx.load (std::memory_order_acquire)];
+        for (int i = 0; i < buf.count; ++i)
+        {
+            const auto& r = buf.routes[(size_t) i];
             destSums[(int) r.dest] += srcValues[(int) r.source] * r.amount;
+        }
     }
 
-    // State (serialised under its own tree, separate from the APVTS).
     juce::ValueTree toValueTree() const;
     void fromValueTree (const juce::ValueTree& v);
 
-    // Name <-> enum mapping (prototype-compatible ids).
     static juce::String sourceId (ModSource s);
     static juce::String destId   (ModDest d);
     static ModSource    sourceFromId (const juce::String& s, bool& ok);
     static ModDest      destFromId   (const juce::String& s, bool& ok);
 
 private:
-    std::vector<ModRoute> routes;
+    struct Buffer { std::array<ModRoute, kMaxRoutes> routes {}; int count = 0; };
+
+    // Build the inactive buffer from `newRoutes` and publish it atomically.
+    void publish (const std::vector<ModRoute>& newRoutes);
+
+    std::array<Buffer, 2> buffers;
+    std::atomic<int> activeIdx { 0 };
 };
 
 } // namespace zw

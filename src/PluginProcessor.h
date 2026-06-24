@@ -42,7 +42,8 @@ public:
     //==========================================================================
     int getNumPrograms() override { return juce::jmax (1, presets.getNumFactory()); }
     int getCurrentProgram() override { return currentProgram; }
-    void setCurrentProgram (int index) override { currentProgram = index; presets.applyFactory (index); }
+    void setCurrentProgram (int index) override
+    { index = juce::jlimit (0, juce::jmax (0, getNumPrograms() - 1), index); currentProgram = index; presets.applyFactory (index); }
     const juce::String getProgramName (int index) override { return presets.factoryName (index); }
     void changeProgramName (int, const juce::String&) override {}
 

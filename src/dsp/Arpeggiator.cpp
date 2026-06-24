@@ -27,7 +27,7 @@ void Arpeggiator::reset() noexcept
     stepIsEven = true;
 }
 
-int Arpeggiator::buildSequence (std::vector<int>& seq) const
+int Arpeggiator::buildSequence (std::vector<int>& seq)
 {
     seq.clear();
     if (held.empty()) return 0;
@@ -35,25 +35,25 @@ int Arpeggiator::buildSequence (std::vector<int>& seq) const
     const int mode = (int) val (pMode);                 // 0 Up,1 Down,2 Up/Dn,3 Random,4 Chord,5 As Played
     const int octs = juce::jlimit (1, 4, (int) val (pOct));
 
-    std::vector<int> base;
-    base.reserve (held.size());
-    for (auto& h : held) base.push_back (h.note);
+    baseScratch.clear();
+    for (auto& h : held) baseScratch.push_back (h.note);
 
     if (mode == 5)                  { /* As Played: keep order */ }
-    else if (mode == 1)             { std::sort (base.begin(), base.end(), std::greater<int>()); }
-    else                            { std::sort (base.begin(), base.end()); }   // Up / Up-Dn / Random / Chord
+    else if (mode == 1)             { std::sort (baseScratch.begin(), baseScratch.end(), std::greater<int>()); }
+    else                            { std::sort (baseScratch.begin(), baseScratch.end()); }   // Up / Up-Dn / Random / Chord
 
-    // Extend across octave range.
-    std::vector<int> ext;
+    // Extend across octave range, building directly into seq.
     for (int o = 0; o < octs; ++o)
-        for (int n : base)
-            ext.push_back (n + 12 * o);
+        for (int n : baseScratch)
+            seq.push_back (n + 12 * o);
 
-    if (mode == 2 && ext.size() > 1)   // Up/Dn: append the descending middle
-        for (int i = (int) ext.size() - 2; i >= 1; --i)
-            ext.push_back (ext[(size_t) i]);
+    if (mode == 2 && seq.size() > 1)   // Up/Dn: append the descending middle
+    {
+        const int sz = (int) seq.size();
+        for (int i = sz - 2; i >= 1; --i)
+            seq.push_back (seq[(size_t) i]);
+    }
 
-    seq = ext;
     return (int) seq.size();
 }
 
@@ -69,7 +69,8 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
     const bool enabled = on (pEnable);
 
     // Update held-note set from the incoming stream, and gather pass-through.
-    juce::MidiBuffer passthrough;
+    juce::MidiBuffer& passthrough = passthroughBuf;   // reused; no allocation
+    passthrough.clear();
     for (const auto meta : midi)
     {
         const auto m = meta.getMessage();
@@ -98,11 +99,13 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
     if (! enabled)
     {
         if (! activeNotes.empty()) allNotesOff (passthrough, 0);
-        midi.swapWith (passthrough);
+        midi.clear();
+        midi.addEvents (passthrough, 0, numSamples, 0);
         return;
     }
 
-    juce::MidiBuffer out;
+    juce::MidiBuffer& out = outBuf;   // reused; no allocation
+    out.clear();
     out.addEvents (passthrough, 0, numSamples, 0);
 
     if (bpm <= 0.0) bpm = 120.0;
@@ -136,8 +139,7 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
 
             allNotesOff (out, i);
 
-            std::vector<int> seq;
-            const int count = buildSequence (seq);
+            const int count = buildSequence (seqScratch);
             if (count == 0) continue;
 
             const int mode = (int) val (pMode);
@@ -156,17 +158,19 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
                 if (mode == 3) seqIndex = juce::Random::getSystemRandom().nextInt (count);
                 else           seqIndex = seqIndex % count;
 
-                const int note = juce::jlimit (0, 127, seq[(size_t) seqIndex]);
+                const int note = juce::jlimit (0, 127, seqScratch[(size_t) seqIndex]);
                 out.addEvent (juce::MidiMessage::noteOn (1, note, vel), i);
                 activeNotes.push_back (note);
                 if (mode != 3) seqIndex = (seqIndex + 1) % count;
             }
 
-            gateSamplesLeft = juce::jmax (1.0, stepDur * gate);
+            // Gate must end strictly before the next step so a new note isn't cut.
+            gateSamplesLeft = juce::jmax (1.0, juce::jmin (swungLen - 1.0, swungLen * gate));
         }
     }
 
-    midi.swapWith (out);
+    midi.clear();
+    midi.addEvents (out, 0, numSamples, 0);
 }
 
 } // namespace zw

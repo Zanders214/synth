@@ -20,6 +20,16 @@ juce::NormalisableRange<float> makeLogRange (float lo, float hi)
 //==============================================================================
 namespace
 {
+    // AudioParameterBool::getValue() returns the raw (un-snapped) normalised
+    // value, so APVTS can leave a stale fractional value on state restore (it
+    // skips the update when the boolean interpretation is unchanged). Snapping
+    // getValue() to 0/1 makes bool params round-trip cleanly (pluginval @ 10).
+    struct SnappingBool : public juce::AudioParameterBool
+    {
+        using juce::AudioParameterBool::AudioParameterBool;
+        float getValue() const override { return get() ? 1.0f : 0.0f; }
+    };
+
     // --- small typed helpers to keep the layout declarative -----------------
     void addF (Layout& l, const juce::String& id, const juce::String& name,
                juce::NormalisableRange<float> range, float def, const juce::String& unit = {})
@@ -41,7 +51,7 @@ namespace
 
     void addBool (Layout& l, const juce::String& id, const juce::String& name, bool def)
     {
-        l.add (std::make_unique<APB> (juce::ParameterID { id, 1 }, name, def));
+        l.add (std::make_unique<SnappingBool> (juce::ParameterID { id, 1 }, name, def));
     }
 
     void addInt (Layout& l, const juce::String& id, const juce::String& name, int lo, int hi, int def)

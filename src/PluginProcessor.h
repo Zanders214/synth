@@ -1,6 +1,9 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "dsp/Wavetable.h"
+#include "dsp/ParamRefs.h"
+#include "dsp/Voice.h"
 
 //==============================================================================
 // ZandersWave — Serum 2-class wavetable synthesizer.
@@ -46,7 +49,12 @@ public:
     juce::AudioProcessorValueTreeState apvts;
 
 private:
-    juce::dsp::Gain<float> masterGain;   // placeholder output stage; engine arrives in M2
+    static constexpr int kNumVoices = 16;
+
+    zw::Wavetable      wavetable;
+    zw::ParamRefs      paramRefs;
+    juce::Synthesiser  synth;
+    juce::dsp::Gain<float> masterGain;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZandersWaveAudioProcessor)
 };

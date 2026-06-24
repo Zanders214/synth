@@ -8,6 +8,12 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMETERS", zw::createParameterLayout())
 {
+    paramRefs.prepare (apvts);
+    wavetable.generateBasicShapes (64);
+
+    synth.addSound (new zw::ZWSound());
+    for (int i = 0; i < kNumVoices; ++i)
+        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable));
 }
 
 ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
@@ -15,6 +21,8 @@ ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
 //==============================================================================
 void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    synth.setCurrentPlaybackSampleRate (sampleRate);
+
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
@@ -34,15 +42,19 @@ bool ZandersWaveAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 }
 
 void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                              juce::MidiBuffer& /*midi*/)
+                                              juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
 
-    // Synth: silent until the M2 voice engine renders into the buffer.
+    for (int ch = getTotalNumInputChannels(); ch < getTotalNumOutputChannels(); ++ch)
+        buffer.clear (ch, 0, buffer.getNumSamples());
     buffer.clear();
 
+    // Voice engine renders all active voices into the buffer.
+    synth.renderNextBlock (buffer, midi, 0, buffer.getNumSamples());
+
     // Master gain: 0..1 -> -24..0 dB (linear gain), smoothed.
-    const float norm   = apvts.getRawParameterValue ("masterOut")->load();
+    const float norm   = apvts.getRawParameterValue (zw::id::masterOut)->load();
     const float gainDb = norm * 24.0f - 24.0f;
     masterGain.setGainLinear (juce::Decibels::decibelsToGain (gainDb, -24.0f));
 

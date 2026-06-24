@@ -79,3 +79,25 @@ target_link_libraries(ZandersWave
 
 # NOTE: juce_add_binary_data(...) for bundled fonts + wavetables is added in M6/M7
 # once the asset files exist under assets/.
+
+# ---- Headless render smoke test (M2 verification) --------------------------
+# A console app that compiles the DSP sources directly and drives the voice
+# engine; links the JUCE modules itself (not the plugin shared-code target) to
+# avoid double-compiling JUCE modules.
+juce_add_console_app(render_smoke PRODUCT_NAME "render_smoke")
+juce_generate_juce_header(render_smoke)
+target_sources(render_smoke PRIVATE
+    tests/render_smoke.cpp
+    src/Parameters.cpp
+    src/dsp/Wavetable.cpp
+    src/dsp/ParamRefs.cpp
+    src/dsp/Voice.cpp)
+target_include_directories(render_smoke PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(render_smoke PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(render_smoke PRIVATE
+    juce::juce_audio_utils
+    juce::juce_audio_processors
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)

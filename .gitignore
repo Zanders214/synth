@@ -1,0 +1,22 @@
+# Build output
+build/
+build-vs/
+out/
+cmake-build-*/
+
+# SonarCloud build-wrapper / scanner
+bw-output/
+.scannerwork/
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.aps
+*.suo
+compile_commands.json
+
+# OS
+.DS_Store
+Thumbs.db

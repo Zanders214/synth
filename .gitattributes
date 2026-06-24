@@ -1,0 +1,22 @@
+# Normalize line endings: store text as LF in the repo, check out native.
+* text=auto
+
+# Source files always LF (consistent across macOS/Windows + CI/SonarCloud)
+*.cpp   text eol=lf
+*.h     text eol=lf
+*.cmake text eol=lf
+*.txt   text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.properties text eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+
+# Treat binary assets as binary (no EOL munging, no diff)
+*.ttf   binary
+*.otf   binary
+*.zwt   binary
+*.wav   binary
+*.png   binary

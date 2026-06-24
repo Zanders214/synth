@@ -1,0 +1,172 @@
+#include "Arpeggiator.h"
+#include <algorithm>
+
+namespace zw
+{
+
+void Arpeggiator::prepareParams (juce::AudioProcessorValueTreeState& s)
+{
+    pEnable = s.getRawParameterValue (id::arpEnable);
+    pRate   = s.getRawParameterValue (id::arpRate);
+    pMode   = s.getRawParameterValue (id::arpMode);
+    pOct    = s.getRawParameterValue (id::arpOctaves);
+    pGate   = s.getRawParameterValue (id::arpGate);
+    pSwing  = s.getRawParameterValue (id::arpSwing);
+    for (int i = 0; i < 16; ++i)
+        pStep[i] = s.getRawParameterValue (id::arpStep (i + 1));
+}
+
+void Arpeggiator::reset() noexcept
+{
+    held.clear();
+    activeNotes.clear();
+    seqIndex = 0;
+    stepIndex = -1;
+    samplesToNextStep = 0.0;
+    gateSamplesLeft = 0.0;
+    stepIsEven = true;
+}
+
+int Arpeggiator::buildSequence (std::vector<int>& seq) const
+{
+    seq.clear();
+    if (held.empty()) return 0;
+
+    const int mode = (int) val (pMode);                 // 0 Up,1 Down,2 Up/Dn,3 Random,4 Chord,5 As Played
+    const int octs = juce::jlimit (1, 4, (int) val (pOct));
+
+    std::vector<int> base;
+    base.reserve (held.size());
+    for (auto& h : held) base.push_back (h.note);
+
+    if (mode == 5)                  { /* As Played: keep order */ }
+    else if (mode == 1)             { std::sort (base.begin(), base.end(), std::greater<int>()); }
+    else                            { std::sort (base.begin(), base.end()); }   // Up / Up-Dn / Random / Chord
+
+    // Extend across octave range.
+    std::vector<int> ext;
+    for (int o = 0; o < octs; ++o)
+        for (int n : base)
+            ext.push_back (n + 12 * o);
+
+    if (mode == 2 && ext.size() > 1)   // Up/Dn: append the descending middle
+        for (int i = (int) ext.size() - 2; i >= 1; --i)
+            ext.push_back (ext[(size_t) i]);
+
+    seq = ext;
+    return (int) seq.size();
+}
+
+void Arpeggiator::allNotesOff (juce::MidiBuffer& out, int sample)
+{
+    for (int n : activeNotes)
+        out.addEvent (juce::MidiMessage::noteOff (1, n), sample);
+    activeNotes.clear();
+}
+
+void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
+{
+    const bool enabled = on (pEnable);
+
+    // Update held-note set from the incoming stream, and gather pass-through.
+    juce::MidiBuffer passthrough;
+    for (const auto meta : midi)
+    {
+        const auto m = meta.getMessage();
+        const int  t = meta.samplePosition;
+        if (m.isNoteOn())
+        {
+            const int note = m.getNoteNumber();
+            held.erase (std::remove_if (held.begin(), held.end(),
+                        [note] (const Held& h) { return h.note == note; }), held.end());
+            held.push_back ({ note, (juce::uint8) m.getVelocity() });
+            if (! enabled) passthrough.addEvent (m, t);
+        }
+        else if (m.isNoteOff())
+        {
+            const int note = m.getNoteNumber();
+            held.erase (std::remove_if (held.begin(), held.end(),
+                        [note] (const Held& h) { return h.note == note; }), held.end());
+            if (! enabled) passthrough.addEvent (m, t);
+        }
+        else
+        {
+            passthrough.addEvent (m, t);   // CC, pitch bend, etc. always pass
+        }
+    }
+
+    if (! enabled)
+    {
+        if (! activeNotes.empty()) allNotesOff (passthrough, 0);
+        midi.swapWith (passthrough);
+        return;
+    }
+
+    juce::MidiBuffer out;
+    out.addEvents (passthrough, 0, numSamples, 0);
+
+    if (bpm <= 0.0) bpm = 120.0;
+    static const double beatsPerStep[6] = { 1.0, 0.5, 1.0 / 3.0, 0.25, 1.0 / 6.0, 0.125 };
+    const int rate = juce::jlimit (0, 5, (int) val (pRate));
+    const double stepDur = (60.0 / bpm) * beatsPerStep[rate] * sampleRate;
+    const float  gate    = juce::jlimit (0.05f, 1.0f, val (pGate));
+    const float  swing   = val (pSwing);
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        if (gateSamplesLeft > 0.0)
+        {
+            gateSamplesLeft -= 1.0;
+            if (gateSamplesLeft <= 0.0)
+                allNotesOff (out, i);
+        }
+
+        samplesToNextStep -= 1.0;
+        if (samplesToNextStep <= 0.0)
+        {
+            // Swing pushes the off-beats later.
+            const double swungLen = stepDur * (stepIsEven ? (1.0 + swing * 0.5) : (1.0 - swing * 0.5));
+            samplesToNextStep += swungLen;
+            stepIsEven = ! stepIsEven;
+
+            stepIndex = (stepIndex + 1) % 16;
+
+            if (held.empty()) { if (! activeNotes.empty()) allNotesOff (out, i); continue; }
+            if (! on (pStep[stepIndex])) continue;        // step gated off
+
+            allNotesOff (out, i);
+
+            std::vector<int> seq;
+            const int count = buildSequence (seq);
+            if (count == 0) continue;
+
+            const int mode = (int) val (pMode);
+            const juce::uint8 vel = held.back().vel;
+
+            if (mode == 4)   // Chord: all held notes
+            {
+                for (auto& h : held)
+                {
+                    out.addEvent (juce::MidiMessage::noteOn (1, h.note, h.vel), i);
+                    activeNotes.push_back (h.note);
+                }
+            }
+            else
+            {
+                if (mode == 3) seqIndex = juce::Random::getSystemRandom().nextInt (count);
+                else           seqIndex = seqIndex % count;
+
+                const int note = juce::jlimit (0, 127, seq[(size_t) seqIndex]);
+                out.addEvent (juce::MidiMessage::noteOn (1, note, vel), i);
+                activeNotes.push_back (note);
+                if (mode != 3) seqIndex = (seqIndex + 1) % count;
+            }
+
+            gateSamplesLeft = juce::jmax (1.0, stepDur * gate);
+        }
+    }
+
+    midi.swapWith (out);
+}
+
+} // namespace zw

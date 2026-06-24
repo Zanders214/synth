@@ -30,7 +30,8 @@ class ZWVoice : public juce::SynthesiserVoice
 {
 public:
     ZWVoice (const ParamRefs& refs, const Wavetable& wt,
-             const ModMatrix& matrix, const std::atomic<double>& bpm);
+             const ModMatrix& matrix, const std::atomic<double>& bpm,
+             std::atomic<double>& lastNoteFreq);
 
     bool canPlaySound (juce::SynthesiserSound* s) override;
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int currentPitchWheelPosition) override;
@@ -53,6 +54,7 @@ private:
     const Wavetable& table;
     const ModMatrix& matrix;
     const std::atomic<double>& bpmRef;
+    std::atomic<double>& lastNoteFreqRef;
 
     WavetableOscillator oscA, oscB;
     SubOscillator       sub;
@@ -61,7 +63,8 @@ private:
     Envelope            ampEnv, env2, env3;
     Lfo                 lfo[4];
 
-    double noteFreq = 440.0;
+    double noteFreq = 440.0;     // gliding (sounding) frequency
+    double targetFreq = 440.0;   // destination pitch
     float  velocity = 1.0f, rawVelocity = 1.0f, noteNorm = 0.0f;
     float  pitchBendSemis = 0.0f;
     int    midiNote = 60;

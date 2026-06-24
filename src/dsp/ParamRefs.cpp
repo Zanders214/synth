@@ -54,6 +54,7 @@ void ParamRefs::prepare (juce::AudioProcessorValueTreeState& s)
 
     masterOut = s.getRawParameterValue (id::masterOut);
     bendRange = s.getRawParameterValue (id::bendRange);
+    glideTime = s.getRawParameterValue (id::glideTime);
 
     // ---- Modulation sources ----
     env2A = s.getRawParameterValue (id::env (2, "attack"));

@@ -9,6 +9,7 @@
 #include "dsp/ParamRefs.h"
 #include "dsp/ModMatrix.h"
 #include "dsp/Voice.h"
+#include "dsp/Arpeggiator.h"
 
 #include <atomic>
 #include <cstdio>
@@ -54,6 +55,7 @@ int main()
 
     zw::ModMatrix matrix;                 // default routes
     std::atomic<double> bpm { 120.0 };
+    std::atomic<double> lastNoteFreq { 440.0 };
 
     const double sr = 48000.0;
     const int    bs = 512;
@@ -61,7 +63,7 @@ int main()
     juce::Synthesiser synth;
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < 16; ++i)
-        synth.addVoice (new zw::ZWVoice (refs, wt, matrix, bpm));
+        synth.addVoice (new zw::ZWVoice (refs, wt, matrix, bpm, lastNoteFreq));
     synth.setCurrentPlaybackSampleRate (sr);
 
     juce::AudioBuffer<float> buffer (2, bs);
@@ -92,8 +94,36 @@ int main()
 
     const double rms = std::sqrt (sumSq / (double) juce::jmax ((long) 1, samples));
     std::printf ("ZandersWave render smoke: RMS=%.6f peak=%.6f\n", rms, peak);
+    const bool soundOk = std::isfinite (rms) && std::isfinite (peak) && rms > 1.0e-4 && peak <= 4.0;
 
-    const bool ok = std::isfinite (rms) && std::isfinite (peak) && rms > 1.0e-4 && peak <= 4.0;
-    std::printf ("%s\n", ok ? "PASS: synth produced sound" : "FAIL: silent or non-finite output");
+    // ---- Arpeggiator check: enable arp, hold a chord, count generated notes ----
+    if (auto* pe = proc.apvts.getParameter (zw::id::arpEnable))
+        pe->setValueNotifyingHost (1.0f);
+
+    zw::Arpeggiator arp;
+    arp.prepareParams (proc.apvts);
+    arp.prepare (sr);
+
+    int arpNoteOns = 0;
+    for (int b = 0; b < 200; ++b)
+    {
+        juce::MidiBuffer mb;
+        if (b == 0)   // hold a C major triad
+        {
+            mb.addEvent (juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100), 0);
+            mb.addEvent (juce::MidiMessage::noteOn (1, 64, (juce::uint8) 100), 0);
+            mb.addEvent (juce::MidiMessage::noteOn (1, 67, (juce::uint8) 100), 0);
+        }
+        arp.process (mb, bs, 120.0);
+        for (const auto meta : mb)
+            if (meta.getMessage().isNoteOn())
+                ++arpNoteOns;
+    }
+    std::printf ("Arpeggiator: %d note-ons over ~2s\n", arpNoteOns);
+    const bool arpOk = arpNoteOns >= 4;
+
+    const bool ok = soundOk && arpOk;
+    std::printf ("%s\n", ok ? "PASS: synth produced sound + arp stepped"
+                            : "FAIL: silent output or arp not stepping");
     return ok ? 0 : 1;
 }

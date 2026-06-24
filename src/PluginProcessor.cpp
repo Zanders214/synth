@@ -10,11 +10,12 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
 {
     paramRefs.prepare (apvts);
     fxChain.prepareParams (apvts);
+    arp.prepareParams (apvts);
     wavetable.generateBasicShapes (64);
 
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < kNumVoices; ++i)
-        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable, modMatrix, currentBpm));
+        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable, modMatrix, currentBpm, lastNoteFreq));
 }
 
 ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
@@ -23,6 +24,7 @@ ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
 void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     synth.setCurrentPlaybackSampleRate (sampleRate);
+    arp.prepare (sampleRate);
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
@@ -59,6 +61,9 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         if (auto pos = ph->getPosition())
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);
+
+    // Arpeggiator rewrites the MIDI stream (pass-through when disabled).
+    arp.process (midi, buffer.getNumSamples(), currentBpm.load());
 
     // Voice engine renders all active voices into the buffer.
     synth.renderNextBlock (buffer, midi, 0, buffer.getNumSamples());

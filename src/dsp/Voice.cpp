@@ -4,8 +4,9 @@ namespace zw
 {
 
 ZWVoice::ZWVoice (const ParamRefs& refs, const Wavetable& wt,
-                  const ModMatrix& mm, const std::atomic<double>& bpm)
-    : p (refs), table (wt), matrix (mm), bpmRef (bpm)
+                  const ModMatrix& mm, const std::atomic<double>& bpm,
+                  std::atomic<double>& lastNoteFreq)
+    : p (refs), table (wt), matrix (mm), bpmRef (bpm), lastNoteFreqRef (lastNoteFreq)
 {
     oscA.setWavetable (&table);
     oscB.setWavetable (&table);
@@ -53,6 +54,12 @@ void ZWVoice::startNote (int midiNoteNumber, float vel, juce::SynthesiserSound*,
     velocity    = 0.2f + 0.8f * vel;
     noteNorm    = juce::jlimit (-1.0f, 1.0f, (midiNote - 60) / 48.0f);
     pitchWheelMoved (pitchWheel);
+
+    // Glide: start from the previous note's pitch (poly portamento) when enabled.
+    targetFreq = 440.0 * std::pow (2.0, (midiNote - 69 + pitchBendSemis) / 12.0);
+    const float glide = (p.glideTime != nullptr) ? p.glideTime->load() : 0.0f;
+    noteFreq = (glide > 0.0001f) ? lastNoteFreqRef.load() : targetFreq;
+    lastNoteFreqRef.store (targetFreq);
 
     const bool randPhase = ParamRefs::on (p.a.phaserand) || ParamRefs::on (p.b.phaserand);
     const float startPhaseA = (p.a.phase != nullptr) ? p.a.phase->load() / 360.0f : 0.0f;
@@ -104,7 +111,19 @@ void ZWVoice::pitchWheelMoved (int newValue)
 
 void ZWVoice::updateBlockParams (int numSamples)
 {
-    noteFreq = 440.0 * std::pow (2.0, (midiNote - 69 + pitchBendSemis) / 12.0);
+    targetFreq = 440.0 * std::pow (2.0, (midiNote - 69 + pitchBendSemis) / 12.0);
+
+    // Portamento: glide the sounding frequency toward the target over glide seconds.
+    const float glide = (p.glideTime != nullptr) ? p.glideTime->load() : 0.0f;
+    if (glide > 0.0001f && numSamples > 0)
+    {
+        const double coef = 1.0 - std::exp (-(double) numSamples / (glide * getSampleRate()));
+        noteFreq += (targetFreq - noteFreq) * coef;
+    }
+    else
+    {
+        noteFreq = targetFreq;
+    }
 
     aOn      = ParamRefs::on (p.a.enable);
     bOn      = ParamRefs::on (p.b.enable);

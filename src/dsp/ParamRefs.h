@@ -29,7 +29,7 @@ struct ParamRefs
     std::atomic<float> *filterEnable {}, *filterType {}, *cutoff {}, *reso {}, *drive {},
                        *fmix {}, *routeA {}, *routeB {}, *routeS {}, *routeN {};
     std::atomic<float> *env1A {}, *env1D {}, *env1S {}, *env1R {};
-    std::atomic<float> *masterOut {}, *bendRange {};
+    std::atomic<float> *masterOut {}, *bendRange {}, *glideTime {};
 
     // ---- Modulation sources -------------------------------------------------
     std::atomic<float> *env2A {}, *env2D {}, *env2S {}, *env2R {};

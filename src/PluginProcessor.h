@@ -4,6 +4,7 @@
 #include "dsp/Wavetable.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/Voice.h"
+#include "dsp/Arpeggiator.h"
 #include "dsp/fx/FxChain.h"
 
 //==============================================================================
@@ -55,7 +56,9 @@ private:
     zw::Wavetable      wavetable;
     zw::ParamRefs      paramRefs;
     zw::ModMatrix      modMatrix;
+    zw::Arpeggiator    arp;
     std::atomic<double> currentBpm { 120.0 };
+    std::atomic<double> lastNoteFreq { 440.0 };
     juce::Synthesiser  synth;
     zw::FxChain        fxChain;
     juce::dsp::Gain<float> masterGain;

@@ -88,36 +88,14 @@ juce::AudioProcessorEditor* ZandersWaveAudioProcessor::createEditor()
 //==============================================================================
 void ZandersWaveAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // Bundle the APVTS state and the mod matrix under one wrapper tree.
-    juce::ValueTree wrapper ("ZANDERSWAVE");
-    wrapper.appendChild (apvts.copyState(), nullptr);
-    wrapper.appendChild (modMatrix.toValueTree(), nullptr);
-
-    if (auto xml = wrapper.createXml())
+    if (auto xml = presets.captureState().createXml())
         copyXmlToBinary (*xml, destData);
 }
 
 void ZandersWaveAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    auto xml = getXmlFromBinary (data, sizeInBytes);
-    if (xml == nullptr)
-        return;
-
-    auto wrapper = juce::ValueTree::fromXml (*xml);
-
-    if (wrapper.hasType ("ZANDERSWAVE"))
-    {
-        auto params = wrapper.getChildWithName (apvts.state.getType());
-        if (params.isValid())
-            apvts.replaceState (params);
-
-        modMatrix.fromValueTree (wrapper.getChildWithName ("MODMATRIX"));
-    }
-    else if (wrapper.hasType (apvts.state.getType()))
-    {
-        // Backwards-compat: older state without the wrapper.
-        apvts.replaceState (wrapper);
-    }
+    if (auto xml = getXmlFromBinary (data, sizeInBytes))
+        presets.applyState (juce::ValueTree::fromXml (*xml));
 }
 
 //==============================================================================

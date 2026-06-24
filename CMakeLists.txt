@@ -89,6 +89,7 @@ juce_generate_juce_header(render_smoke)
 target_sources(render_smoke PRIVATE
     tests/render_smoke.cpp
     src/Parameters.cpp
+    src/PresetManager.cpp
     src/dsp/Wavetable.cpp
     src/dsp/ParamRefs.cpp
     src/dsp/ModMatrix.cpp

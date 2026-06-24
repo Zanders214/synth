@@ -10,6 +10,7 @@
 #include "dsp/ModMatrix.h"
 #include "dsp/Voice.h"
 #include "dsp/Arpeggiator.h"
+#include "PresetManager.h"
 
 #include <atomic>
 #include <cstdio>
@@ -122,8 +123,22 @@ int main()
     std::printf ("Arpeggiator: %d note-ons over ~2s\n", arpNoteOns);
     const bool arpOk = arpNoteOns >= 4;
 
-    const bool ok = soundOk && arpOk;
-    std::printf ("%s\n", ok ? "PASS: synth produced sound + arp stepped"
-                            : "FAIL: silent output or arp not stepping");
+    // ---- Preset check: apply a factory preset, then state capture/restore ----
+    zw::PresetManager pm (proc, proc.apvts, matrix);
+    pm.applyFactory (3);   // Sub Bass: drives sub level high
+    const float subLvl = proc.apvts.getRawParameterValue (zw::id::subLevel)->load();
+
+    auto snapshot = pm.captureState();
+    if (auto* mo = proc.apvts.getParameter (zw::id::masterOut)) mo->setValueNotifyingHost (0.1f);
+    pm.applyState (snapshot);
+    const float restored = proc.apvts.getRawParameterValue (zw::id::masterOut)->load();
+
+    std::printf ("Presets: factory=%d, SubBass sub_level=%.2f, restored master=%.2f\n",
+                 pm.getNumFactory(), subLvl, restored);
+    const bool presetOk = pm.getNumFactory() >= 6 && subLvl > 0.7f && std::abs (restored - 0.80f) < 0.05f;
+
+    const bool ok = soundOk && arpOk && presetOk;
+    std::printf ("%s\n", ok ? "PASS: sound + arp + presets"
+                            : "FAIL: a subsystem check did not pass");
     return ok ? 0 : 1;
 }

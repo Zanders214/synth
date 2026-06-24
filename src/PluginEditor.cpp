@@ -18,7 +18,16 @@ public:
     {
         slider.setSliderStyle (rotary ? juce::Slider::RotaryVerticalDrag : juce::Slider::LinearHorizontal);
         slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 72, 14);
+        slider.setNumDecimalPlacesToDisplay (2);
         slider.setColour (juce::Slider::textBoxTextColourId, theme::t2);
+        // Show the parameter's own formatted text (with units) in the value box.
+        if (auto* rp = s.getParameter (id))
+        {
+            slider.textFromValueFunction = [rp] (double v)
+            { return rp->getText (rp->getNormalisableRange().convertTo0to1 ((float) v), 0); };
+            slider.valueFromTextFunction = [rp] (const juce::String& t)
+            { return (double) rp->getNormalisableRange().convertFrom0to1 (rp->getValueForText (t)); };
+        }
         if (arc != juce::Colour()) slider.setColour (juce::Slider::rotarySliderFillColourId, arc);
         slider.setLookAndFeel (&lf);
         if (auto* p = s.getParameter (id))
@@ -61,7 +70,9 @@ public:
         g.drawText (title.toUpperCase(), getLocalBounds().reduced (14, 10).removeFromTop (16),
                     juce::Justification::topLeft, false);
     }
-    juce::Rectangle<int> body() const { return getLocalBounds().reduced (14).withTrimmedTop (20); }
+    // Body rect in the PARENT's coordinate space — controls are children of the
+    // panel (not of this module), so they must be laid out in panel coordinates.
+    juce::Rectangle<int> body() const { return getBounds().reduced (14).withTrimmedTop (20); }
 private:
     juce::String title; juce::Font titleFont;
 };

@@ -2,10 +2,13 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "ui/ZWLookAndFeel.h"
+
+namespace zw { class ZWPanel; }
 
 //==============================================================================
-// M0 editor: hosts JUCE's generic parameter editor so the plugin is fully usable
-// and testable before the custom Serum-style UI is built in M7.
+// The plugin editor: hosts the fixed 1320x900 ZWPanel and scales it with an
+// AffineTransform so the window stays proportional at any size.
 //==============================================================================
 class ZandersWaveAudioProcessorEditor : public juce::AudioProcessorEditor
 {
@@ -17,8 +20,12 @@ public:
     void resized() override;
 
 private:
+    static constexpr int kDesignW = 1320;
+    static constexpr int kDesignH = 900;
+
     ZandersWaveAudioProcessor& processorRef;
-    juce::GenericAudioProcessorEditor generic;   // replaced by the custom UI in M7
+    zw::ZWLookAndFeel lnf;
+    std::unique_ptr<zw::ZWPanel> panel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZandersWaveAudioProcessorEditor)
 };

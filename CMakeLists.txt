@@ -48,6 +48,13 @@ juce_add_plugin(ZandersWave
 
 juce_generate_juce_header(ZandersWave)
 
+# ---- Bundled assets (fonts) -> BinaryData ----------------------------------
+juce_add_binary_data(ZandersWaveData
+    SOURCES
+        assets/fonts/SpaceGroteskVariable.ttf
+        assets/fonts/JetBrainsMonoVariable.ttf)
+set_target_properties(ZandersWaveData PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
 # ---- Sources (globbed so new milestone files are picked up on reconfigure) --
 file(GLOB_RECURSE ZW_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
@@ -69,6 +76,7 @@ target_compile_definitions(ZandersWave PUBLIC
 # (audio_devices + the keyboard component are needed by the Standalone target).
 target_link_libraries(ZandersWave
     PRIVATE
+        ZandersWaveData
         juce::juce_audio_utils
         juce::juce_audio_processors
         juce::juce_dsp
@@ -99,6 +107,25 @@ target_include_directories(render_smoke PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(render_smoke PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(render_smoke PRIVATE
+    juce::juce_audio_utils
+    juce::juce_audio_processors
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+
+# ---- Headless UI snapshot (dev tool; excluded from default/CI builds) -------
+# Renders the editor to a PNG so UI layout can be inspected without a window.
+# Build on demand: cmake --build build --target ui_snapshot
+juce_add_console_app(ui_snapshot PRODUCT_NAME "ui_snapshot")
+juce_generate_juce_header(ui_snapshot)
+set_target_properties(ui_snapshot PROPERTIES EXCLUDE_FROM_ALL TRUE)
+target_sources(ui_snapshot PRIVATE tests/ui_snapshot.cpp ${ZW_SOURCES})
+target_include_directories(ui_snapshot PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(ui_snapshot PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0
+    JucePlugin_Name="ZandersWave")
+target_link_libraries(ui_snapshot PRIVATE
+    ZandersWaveData
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_dsp

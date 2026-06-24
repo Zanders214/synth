@@ -9,6 +9,7 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
       apvts (*this, nullptr, "PARAMETERS", zw::createParameterLayout())
 {
     paramRefs.prepare (apvts);
+    fxChain.prepareParams (apvts);
     wavetable.generateBasicShapes (64);
 
     synth.addSound (new zw::ZWSound());
@@ -28,6 +29,9 @@ void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
     spec.numChannels      = (juce::uint32) juce::jmax (1, getTotalNumOutputChannels());
 
+    fxChain.prepare (spec);
+    fxChain.reset();
+
     masterGain.prepare (spec);
     masterGain.setRampDurationSeconds (0.02);
 }
@@ -36,9 +40,9 @@ void ZandersWaveAudioProcessor::releaseResources() {}
 
 bool ZandersWaveAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    const auto& out = layouts.getMainOutputChannelSet();
-    return out == juce::AudioChannelSet::stereo()
-        || out == juce::AudioChannelSet::mono();
+    // Stereo-only: the FX rack (oversampled distortion, ping-pong delay, widener)
+    // assumes two channels.
+    return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
 void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
@@ -59,12 +63,14 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Voice engine renders all active voices into the buffer.
     synth.renderNextBlock (buffer, midi, 0, buffer.getNumSamples());
 
+    // Global FX rack (serial), then master gain.
+    juce::dsp::AudioBlock<float> block (buffer);
+    fxChain.process (block);
+
     // Master gain: 0..1 -> -24..0 dB (linear gain), smoothed.
     const float norm   = apvts.getRawParameterValue (zw::id::masterOut)->load();
     const float gainDb = norm * 24.0f - 24.0f;
     masterGain.setGainLinear (juce::Decibels::decibelsToGain (gainDb, -24.0f));
-
-    juce::dsp::AudioBlock<float> block (buffer);
     masterGain.process (juce::dsp::ProcessContextReplacing<float> (block));
 }
 

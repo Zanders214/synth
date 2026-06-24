@@ -1,31 +1,16 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Parameters.h"
 
 //==============================================================================
 ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
     : AudioProcessor (BusesProperties()
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+      apvts (*this, nullptr, "PARAMETERS", zw::createParameterLayout())
 {
 }
 
 ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
-
-//==============================================================================
-juce::AudioProcessorValueTreeState::ParameterLayout
-ZandersWaveAudioProcessor::createParameterLayout()
-{
-    using namespace juce;
-    AudioProcessorValueTreeState::ParameterLayout layout;
-
-    // M0: a single Master Out parameter (0..1 -> -24..0 dB, default 0.80 ~= -5 dB).
-    // The full parameter tree is built in M1.
-    layout.add (std::make_unique<AudioParameterFloat>(
-        ParameterID { "masterOut", 1 }, "Master Out",
-        NormalisableRange<float> (0.0f, 1.0f, 0.0001f), 0.80f));
-
-    return layout;
-}
 
 //==============================================================================
 void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)

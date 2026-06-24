@@ -30,6 +30,7 @@ public:
         }
         if (arc != juce::Colour()) slider.setColour (juce::Slider::rotarySliderFillColourId, arc);
         slider.setLookAndFeel (&lf);
+        slider.setTooltip (name);
         if (auto* p = s.getParameter (id))
             slider.setDoubleClickReturnValue (true, p->getNormalisableRange().convertFrom0to1 (p->getDefaultValue()));
         addAndMakeVisible (slider);
@@ -478,6 +479,7 @@ private:
     juce::Component *fxPageComp{}, *arpPageComp{}, *wtPageComp{}, *matrixPage{};
 
     juce::TextButton prevBtn, nextBtn;
+    juce::TooltipWindow tooltip { this, 600 };
     juce::String presetName { "Init" };
     int modBarY = 620;
 

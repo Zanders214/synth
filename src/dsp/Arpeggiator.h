@@ -17,7 +17,18 @@ namespace zw
 class Arpeggiator
 {
 public:
-    void prepare (double sr) noexcept { sampleRate = sr; reset(); }
+    void prepare (double sr)
+    {
+        sampleRate = sr;
+        passthroughBuf.ensureSize (8192);
+        outBuf.ensureSize (8192);
+        seqScratch.reserve (kMaxSeq);
+        baseScratch.reserve (kMaxSeq);
+        held.reserve (32);
+        activeNotes.reserve (32);
+        reset();
+    }
+    static constexpr int kMaxSeq = 16 * 4 * 2 + 8;   // 16 notes * 4 octaves * up/dn
     void prepareParams (juce::AudioProcessorValueTreeState& apvts);
     void reset() noexcept;
 
@@ -27,7 +38,7 @@ public:
 private:
     struct Held { int note; juce::uint8 vel; };
 
-    int  buildSequence (std::vector<int>& seqOut) const;   // returns count
+    int  buildSequence (std::vector<int>& seqOut);   // returns count (uses scratch members)
     void allNotesOff (juce::MidiBuffer& out, int sample);
 
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }
@@ -37,6 +48,11 @@ private:
 
     std::vector<Held> held;          // currently physically-held notes (play order)
     std::vector<int>  activeNotes;   // notes the arp is currently sounding
+
+    // Pre-allocated scratch reused every block (no audio-thread allocation).
+    juce::MidiBuffer  passthroughBuf, outBuf;
+    std::vector<int>  seqScratch, baseScratch;
+
     int    seqIndex = 0;
     int    stepIndex = -1;
     double samplesToNextStep = 0.0;

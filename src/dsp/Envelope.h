@@ -26,6 +26,17 @@ public:
 
     bool isActive() const noexcept { return stage != Stage::Idle; }
 
+    // Current level without advancing (for use as a modulation source).
+    float getValue() const noexcept { return value; }
+
+    // Advance by a whole block and return the resulting level (control-rate use).
+    float processBlock (int numSamples) noexcept
+    {
+        for (int i = 0; i < numSamples; ++i)
+            getNextSample();
+        return value;
+    }
+
     float getNextSample() noexcept
     {
         switch (stage)

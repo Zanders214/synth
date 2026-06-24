@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../Parameters.h"
+#include "ModMatrix.h"
 #include <atomic>
 
 namespace zw
@@ -29,6 +30,21 @@ struct ParamRefs
                        *fmix {}, *routeA {}, *routeB {}, *routeS {}, *routeN {};
     std::atomic<float> *env1A {}, *env1D {}, *env1S {}, *env1R {};
     std::atomic<float> *masterOut {}, *bendRange {};
+
+    // ---- Modulation sources -------------------------------------------------
+    std::atomic<float> *env2A {}, *env2D {}, *env2S {}, *env2R {};
+    std::atomic<float> *env3A {}, *env3D {}, *env3S {}, *env3R {};
+    std::atomic<float> *macro[4] {};
+
+    struct LfoP
+    {
+        std::atomic<float> *shape {}, *sync {}, *ratehz {}, *ratediv {},
+                           *depth {}, *rise {}, *phase {}, *mode {};
+    };
+    LfoP lfo[4];
+
+    // ---- Modulation destinations (base normalised value + range) -----------
+    juce::RangedAudioParameter* dest[kNumModDests] {};
 
     void prepare (juce::AudioProcessorValueTreeState& s);
 

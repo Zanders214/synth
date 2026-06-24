@@ -54,6 +54,49 @@ void ParamRefs::prepare (juce::AudioProcessorValueTreeState& s)
 
     masterOut = s.getRawParameterValue (id::masterOut);
     bendRange = s.getRawParameterValue (id::bendRange);
+
+    // ---- Modulation sources ----
+    env2A = s.getRawParameterValue (id::env (2, "attack"));
+    env2D = s.getRawParameterValue (id::env (2, "decay"));
+    env2S = s.getRawParameterValue (id::env (2, "sustain"));
+    env2R = s.getRawParameterValue (id::env (2, "release"));
+    env3A = s.getRawParameterValue (id::env (3, "attack"));
+    env3D = s.getRawParameterValue (id::env (3, "decay"));
+    env3S = s.getRawParameterValue (id::env (3, "sustain"));
+    env3R = s.getRawParameterValue (id::env (3, "release"));
+
+    for (int i = 0; i < 4; ++i)
+        macro[i] = s.getRawParameterValue (id::macro (i + 1));
+
+    for (int i = 0; i < 4; ++i)
+    {
+        const int n = i + 1;
+        lfo[i].shape   = s.getRawParameterValue (id::lfo (n, "shape"));
+        lfo[i].sync    = s.getRawParameterValue (id::lfo (n, "sync"));
+        lfo[i].ratehz  = s.getRawParameterValue (id::lfo (n, "ratehz"));
+        lfo[i].ratediv = s.getRawParameterValue (id::lfo (n, "ratediv"));
+        lfo[i].depth   = s.getRawParameterValue (id::lfo (n, "depth"));
+        lfo[i].rise    = s.getRawParameterValue (id::lfo (n, "rise"));
+        lfo[i].phase   = s.getRawParameterValue (id::lfo (n, "phase"));
+        lfo[i].mode    = s.getRawParameterValue (id::lfo (n, "mode"));
+    }
+
+    // ---- Modulation destinations (RangedAudioParameter for base + range) ----
+    dest[(int) ModDest::OscAWt]     = s.getParameter (id::osc ('A', "wtpos"));
+    dest[(int) ModDest::OscAWarp]   = s.getParameter (id::osc ('A', "warp"));
+    dest[(int) ModDest::OscALevel]  = s.getParameter (id::osc ('A', "level"));
+    dest[(int) ModDest::OscAPan]    = s.getParameter (id::osc ('A', "pan"));
+    dest[(int) ModDest::OscADetune] = s.getParameter (id::osc ('A', "detune"));
+    dest[(int) ModDest::OscBWt]     = s.getParameter (id::osc ('B', "wtpos"));
+    dest[(int) ModDest::OscBWarp]   = s.getParameter (id::osc ('B', "warp"));
+    dest[(int) ModDest::OscBLevel]  = s.getParameter (id::osc ('B', "level"));
+    dest[(int) ModDest::OscBPan]    = s.getParameter (id::osc ('B', "pan"));
+    dest[(int) ModDest::OscBDetune] = s.getParameter (id::osc ('B', "detune"));
+    dest[(int) ModDest::SubLevel]   = s.getParameter (id::subLevel);
+    dest[(int) ModDest::NoiseLevel] = s.getParameter (id::noiseLevel);
+    dest[(int) ModDest::Cutoff]     = s.getParameter (id::filterCutoff);
+    dest[(int) ModDest::Reso]       = s.getParameter (id::filterReso);
+    dest[(int) ModDest::Drive]      = s.getParameter (id::filterDrive);
 }
 
 } // namespace zw

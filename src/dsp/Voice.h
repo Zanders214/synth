@@ -6,7 +6,10 @@
 #include "BasicSources.h"
 #include "MultimodeFilter.h"
 #include "Envelope.h"
+#include "Lfo.h"
+#include "ModMatrix.h"
 #include "ParamRefs.h"
+#include <atomic>
 
 namespace zw
 {
@@ -19,13 +22,15 @@ struct ZWSound : public juce::SynthesiserSound
 };
 
 //==============================================================================
-// One polyphonic voice: OSC A + OSC B + SUB + NOISE -> per-source filter routing
-// -> stereo multimode filter -> amp VCA (ENV1). Reads live parameters via ParamRefs.
+// One polyphonic voice. Sources -> per-source filter routing -> stereo filter
+// -> amp VCA (ENV1). ENV2/3, LFO1-4, macros, velocity and note feed the mod
+// matrix, which is applied (per block) on top of each destination's base value.
 //==============================================================================
 class ZWVoice : public juce::SynthesiserVoice
 {
 public:
-    ZWVoice (const ParamRefs& refs, const Wavetable& wt);
+    ZWVoice (const ParamRefs& refs, const Wavetable& wt,
+             const ModMatrix& matrix, const std::atomic<double>& bpm);
 
     bool canPlaySound (juce::SynthesiserSound* s) override;
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int currentPitchWheelPosition) override;
@@ -36,23 +41,28 @@ public:
     void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) override;
 
 private:
-    void updateBlockParams();
+    void updateBlockParams (int numSamples);
+    float lfoFreqHz (int i) const;
     static float semis (float octave, float coarse, float fineCents) noexcept
     {
         return octave * 12.0f + coarse + fineCents * 0.01f;
     }
+    static float clamp01 (float x) noexcept { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
 
     const ParamRefs& p;
     const Wavetable& table;
+    const ModMatrix& matrix;
+    const std::atomic<double>& bpmRef;
 
     WavetableOscillator oscA, oscB;
     SubOscillator       sub;
     NoiseOscillator     noise;
     MultimodeFilter     filter;
-    Envelope            ampEnv;
+    Envelope            ampEnv, env2, env3;
+    Lfo                 lfo[4];
 
     double noteFreq = 440.0;
-    float  velocity = 1.0f;
+    float  velocity = 1.0f, rawVelocity = 1.0f, noteNorm = 0.0f;
     float  pitchBendSemis = 0.0f;
     int    midiNote = 60;
 

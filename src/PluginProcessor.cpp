@@ -13,7 +13,7 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
 
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < kNumVoices; ++i)
-        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable));
+        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable, modMatrix, currentBpm));
 }
 
 ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
@@ -50,6 +50,12 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         buffer.clear (ch, 0, buffer.getNumSamples());
     buffer.clear();
 
+    // Track host tempo for tempo-synced LFOs (and later arp/FX).
+    if (auto* ph = getPlayHead())
+        if (auto pos = ph->getPosition())
+            if (auto bpm = pos->getBpm())
+                currentBpm.store (*bpm);
+
     // Voice engine renders all active voices into the buffer.
     synth.renderNextBlock (buffer, midi, 0, buffer.getNumSamples());
 
@@ -71,16 +77,36 @@ juce::AudioProcessorEditor* ZandersWaveAudioProcessor::createEditor()
 //==============================================================================
 void ZandersWaveAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    if (auto state = apvts.copyState(); state.isValid())
-        if (auto xml = state.createXml())
-            copyXmlToBinary (*xml, destData);
+    // Bundle the APVTS state and the mod matrix under one wrapper tree.
+    juce::ValueTree wrapper ("ZANDERSWAVE");
+    wrapper.appendChild (apvts.copyState(), nullptr);
+    wrapper.appendChild (modMatrix.toValueTree(), nullptr);
+
+    if (auto xml = wrapper.createXml())
+        copyXmlToBinary (*xml, destData);
 }
 
 void ZandersWaveAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    if (auto xml = getXmlFromBinary (data, sizeInBytes))
-        if (xml->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xml));
+    auto xml = getXmlFromBinary (data, sizeInBytes);
+    if (xml == nullptr)
+        return;
+
+    auto wrapper = juce::ValueTree::fromXml (*xml);
+
+    if (wrapper.hasType ("ZANDERSWAVE"))
+    {
+        auto params = wrapper.getChildWithName (apvts.state.getType());
+        if (params.isValid())
+            apvts.replaceState (params);
+
+        modMatrix.fromValueTree (wrapper.getChildWithName ("MODMATRIX"));
+    }
+    else if (wrapper.hasType (apvts.state.getType()))
+    {
+        // Backwards-compat: older state without the wrapper.
+        apvts.replaceState (wrapper);
+    }
 }
 
 //==============================================================================

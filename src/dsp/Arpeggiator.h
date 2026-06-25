@@ -42,6 +42,7 @@ private:
     int  buildSequence (std::vector<int>& seqOut);   // returns count (uses scratch members)
     void allNotesOff (juce::MidiBuffer& out, int sample);
     void emitStep (juce::MidiBuffer& out, int sampleOffset);   // fires one arp step
+    void absorbMidi (const juce::MidiBuffer& midi, juce::MidiBuffer& passthrough, bool enabled);   // updates held set + pass-through
 
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }
     static float val (const std::atomic<float>* p) noexcept { return p != nullptr ? p->load() : 0.0f; }

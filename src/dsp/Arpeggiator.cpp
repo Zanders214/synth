@@ -109,12 +109,12 @@ void Arpeggiator::emitStep (juce::MidiBuffer& out, int sampleOffset)
     gateSamplesLeft = juce::jmax (1.0, juce::jmin (swungLen - 1.0, swungLen * gate));
 }
 
-void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
+// Updates the held-note set from the incoming stream and gathers the
+// pass-through buffer (when the arp is disabled, notes pass straight through;
+// CC/pitch-bend always pass). Factored out of process() to keep its cognitive
+// complexity in check.
+void Arpeggiator::absorbMidi (const juce::MidiBuffer& midi, juce::MidiBuffer& passthrough, bool enabled)
 {
-    const bool enabled = on (pEnable);
-
-    // Update held-note set from the incoming stream, and gather pass-through.
-    juce::MidiBuffer& passthrough = passthroughBuf;   // reused; no allocation
     passthrough.clear();
     for (const auto meta : midi)
     {
@@ -140,6 +140,14 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
             passthrough.addEvent (m, t);   // CC, pitch bend, etc. always pass
         }
     }
+}
+
+void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
+{
+    const bool enabled = on (pEnable);
+
+    juce::MidiBuffer& passthrough = passthroughBuf;   // reused; no allocation
+    absorbMidi (midi, passthrough, enabled);
 
     if (! enabled)
     {

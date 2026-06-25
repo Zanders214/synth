@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include <vector>
+#include <cmath>
 
 namespace zw
 {
@@ -29,6 +30,32 @@ public:
 
     // framePos01: 0..1 across frames. phase01: 0..1 within a cycle.
     float getSample (float framePos01, float phase01, double freqHz, double sampleRate) const noexcept;
+
+    // Per-block reader: the mip selection and frame interpolation depend only on
+    // (framePos, freq), which are constant within an audio block. makeCursor() does
+    // that work once; Cursor::read() then samples per output-sample cheaply (no mip
+    // search, no frame-index math) — the hot oscillator inner loop.
+    struct Cursor
+    {
+        const float* r0 = nullptr;   // chosen mip, lower interpolated frame
+        const float* r1 = nullptr;   // upper interpolated frame
+        float        ff = 0.0f;      // frame blend 0..1
+
+        float read (float phase01) const noexcept
+        {
+            if (r0 == nullptr) return 0.0f;
+            const float ph  = phase01 - std::floor (phase01);
+            const float pos = ph * (float) kFrameSize;
+            const int   i0  = (int) pos;
+            const int   i1  = (i0 + 1) & (kFrameSize - 1);
+            const float pf  = pos - (float) i0;
+            const float s0  = r0[i0] + (r0[i1] - r0[i0]) * pf;
+            const float s1  = r1[i0] + (r1[i1] - r1[i0]) * pf;
+            return s0 + (s1 - s0) * ff;
+        }
+    };
+
+    Cursor makeCursor (float framePos01, double freqHz, double sampleRate) const noexcept;
 
 private:
     struct Mip { int maxHarmonics = 0; std::vector<float> data; }; // numFrames * kFrameSize, frame-major

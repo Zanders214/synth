@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include "FastMath.h"
 
 namespace zw
 {
@@ -46,7 +47,7 @@ public:
     float processSample (int ch, float x) noexcept
     {
         if (driveGain > 1.0001f)
-            x = std::tanh (x * driveGain) * driveComp;
+            x = fastmath::tanh (x * driveGain) * driveComp;
 
         switch (type)
         {

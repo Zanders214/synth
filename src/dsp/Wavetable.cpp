@@ -84,10 +84,11 @@ int Wavetable::mipForFreq (double freqHz, double sampleRate) const noexcept
     return (int) mips.size() - 1;   // very high note: fewest harmonics
 }
 
-float Wavetable::getSample (float framePos01, float phase01, double freqHz, double sampleRate) const noexcept
+Wavetable::Cursor Wavetable::makeCursor (float framePos01, double freqHz, double sampleRate) const noexcept
 {
+    Cursor c;
     if (mips.empty() || numFrames == 0)
-        return 0.0f;
+        return c;
 
     const int m = mipForFreq (freqHz, sampleRate);
     const float* base = mips[(size_t) m].data.data();
@@ -95,20 +96,15 @@ float Wavetable::getSample (float framePos01, float phase01, double freqHz, doub
     const float framePos = juce::jlimit (0.0f, 1.0f, framePos01) * (float) (numFrames - 1);
     const int   f0 = (int) framePos;
     const int   f1 = juce::jmin (f0 + 1, numFrames - 1);
-    const float ff = framePos - (float) f0;
+    c.ff = framePos - (float) f0;
+    c.r0 = base + (size_t) f0 * kFrameSize;
+    c.r1 = base + (size_t) f1 * kFrameSize;
+    return c;
+}
 
-    float ph = phase01 - std::floor (phase01);
-    const float pos = ph * (float) kFrameSize;
-    const int   i0  = (int) pos;
-    const int   i1  = (i0 + 1) & (kFrameSize - 1);
-    const float pf  = pos - (float) i0;
-
-    const float* r0 = base + (size_t) f0 * kFrameSize;
-    const float* r1 = base + (size_t) f1 * kFrameSize;
-
-    const float s0 = r0[i0] + (r0[i1] - r0[i0]) * pf;
-    const float s1 = r1[i0] + (r1[i1] - r1[i0]) * pf;
-    return s0 + (s1 - s0) * ff;
+float Wavetable::getSample (float framePos01, float phase01, double freqHz, double sampleRate) const noexcept
+{
+    return makeCursor (framePos01, freqHz, sampleRate).read (phase01);
 }
 
 } // namespace zw

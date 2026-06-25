@@ -76,8 +76,26 @@ so the plugin must stay light and never stall the audio thread.
   (`-DZW_BUILD_BENCH=ON`, [nanobench](https://github.com/martinus/nanobench)) which times the DSP graph
   (full / voices / FX) and reports ns-per-block + real-time DSP-load %.
   [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark) tracks the
-  trend on the `gh-pages` branch, comments on PR regressions and fails past a 150% threshold. Dashboard:
-  `https://<owner>.github.io/synth/dev/bench/` (one-time: create the `gh-pages` branch + enable Pages).
+  trend on the `gh-pages` branch, comments on PR regressions and fails past a 150% threshold.
+
+### Reading the dashboard
+Live at **`https://zanders214.github.io/synth/dev/bench/`** (Pages → *Deploy from a branch* →
+`gh-pages` / root). It answers one question: *is the plugin getting slower over time?* Every push to
+`dev`/`main` re-runs the benchmark and adds a point; you watch the lines (lower = better, a jump up =
+a regression). Four charts, X-axis = commits over time, Y-axis = the measurement:
+
+| Chart | Measures | Reference |
+|---|---|---|
+| **Full graph (16 voices + 10 FX)** | one 512-sample block through the whole synth | ~0.57 ms/block |
+| **Full graph DSP load @48k/512** | that cost as a % of the real-time budget | **~5%** (of 10.67 ms) |
+| **Voice render (16 voices)** | oscillators/filter/envelopes only | — |
+| **FX chain (10 slots)** | the effects rack only | — |
+
+The headline is **DSP load %**: at 48 kHz / 512 samples the audio thread has 10.67 ms per block, so
+~5% means ~95% headroom for the host. The three ns/block charts break the cost down so a regression
+points at voices vs. FX. Hover a point for the commit + exact value; click it to open the commit.
+A single point shows no trend yet — it builds as commits land. On PRs the job only *compares + comments*
+(it publishes data only from `dev`/`main`).
 
 > Local: `cmake -B build -G Ninja -DZW_BUILD_BENCH=ON && cmake --build build --target perf_bench && \
 > ./build/perf_bench_artefacts/*/perf_bench out.json`. RTSan needs clang ≥ 20.

@@ -154,7 +154,10 @@ target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(unit_tests PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 if(MSVC)
-    target_compile_options(unit_tests PRIVATE /Zi)
+    # Disable optimisation/inlining (/Od /Ob0) and emit debug info (/Zi) so
+    # OpenCppCoverage maps line coverage accurately. With Release inlining the
+    # header-only DSP otherwise reports near-zero coverage even when fully tested.
+    target_compile_options(unit_tests PRIVATE /Od /Ob0 /Zi)
     target_link_options   (unit_tests PRIVATE /DEBUG)
 endif()
 target_link_libraries(unit_tests PRIVATE

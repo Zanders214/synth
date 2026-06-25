@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "../MultimodeFilter.h"
 #include "../FastMath.h"
+#include <array>
 #include <cmath>
 
 namespace zw::fx
@@ -12,8 +13,8 @@ namespace zw::fx
 // Shared helper: blend a processed (wet) block with a stored dry copy.
 inline void blend (juce::dsp::AudioBlock<float>& block, const juce::AudioBuffer<float>& dry, float mix)
 {
-    const int nc = (int) block.getNumChannels();
-    const int ns = (int) block.getNumSamples();
+    const auto nc = (int) block.getNumChannels();
+    const auto ns = (int) block.getNumSamples();
     for (int c = 0; c < nc; ++c)
     {
         auto* w = block.getChannelPointer ((size_t) c);
@@ -30,8 +31,8 @@ struct DryStore
     void prepare (const juce::dsp::ProcessSpec& s) { buf.setSize ((int) s.numChannels, (int) s.maximumBlockSize, false, false, true); }
     void copyFrom (const juce::dsp::AudioBlock<float>& block)
     {
-        const int nc = (int) block.getNumChannels();
-        const int ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
+        const auto ns = (int) block.getNumSamples();
         for (int c = 0; c < nc; ++c)
             buf.copyFrom (c, 0, block.getChannelPointer ((size_t) c), ns);
     }
@@ -53,7 +54,7 @@ public:
 
     void process (juce::dsp::AudioBlock<float>& block)
     {
-        const int ns = (int) block.getNumSamples();
+        const auto ns = (int) block.getNumSamples();
         auto* L = block.getChannelPointer (0);
         auto* R = block.getNumChannels() > 1 ? block.getChannelPointer (1) : L;
         dry.copyFrom (block);
@@ -87,8 +88,8 @@ private:
     float det = 0.3f;
     float width = 0.5f;
     float mix = 1.0f;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> line[8];
-    float lfoPhase[8] = { 0,0,0,0,0,0,0,0 };
+    std::array<juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>, 8> line;
+    std::array<float, 8> lfoPhase { 0,0,0,0,0,0,0,0 };
     DryStore dry;
 };
 
@@ -119,8 +120,8 @@ public:
         const float pre = 1.0f + drive * 24.0f;
 
         auto up = os.processSamplesUp (block);
-        const int nc = (int) up.getNumChannels();
-        const int ns = (int) up.getNumSamples();
+        const auto nc = (int) up.getNumChannels();
+        const auto ns = (int) up.getNumSamples();
         for (int c = 0; c < nc; ++c)
         {
             auto* d = up.getChannelPointer ((size_t) c);
@@ -128,7 +129,7 @@ public:
         }
         os.processSamplesDown (block);
 
-        juce::dsp::ProcessContextReplacing<float> ctx (block);
+        juce::dsp::ProcessContextReplacing ctx (block);
         tone.process (ctx);
 
         block.multiplyBy (outGain);
@@ -141,7 +142,7 @@ private:
         switch (mode)
         {
             case 1: return x > 0.0f ? fastmath::tanh (x) : 0.6f * fastmath::tanh (x);   // diode (asym)
-            case 2: { float y = x; while (y > 1.0f) y = 2.0f - y; while (y < -1.0f) y = -2.0f - y; return y; } // fold
+            case 2: { float y = x; while (y > 1.0f) { y = 2.0f - y; } while (y < -1.0f) { y = -2.0f - y; } return y; } // fold
             default: return fastmath::tanh (x);                                // tube
         }
     }
@@ -175,8 +176,8 @@ public:
 
     void process (juce::dsp::AudioBlock<float>& block)
     {
-        const int ns = (int) block.getNumSamples();
-        const int nc = (int) block.getNumChannels();
+        const auto ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
         dry.copyFrom (block);
         for (int i = 0; i < ns; ++i)
         {
@@ -214,7 +215,7 @@ public:
     void reset() { ph.reset(); }
     void setParams (float rateHz, float depth_, float mix_)
     { ph.setRate (rateHz); ph.setDepth (depth_); ph.setCentreFrequency (600.0f); ph.setFeedback (0.5f); ph.setMix (mix_); }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); ph.process (c); }
+    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); ph.process (c); }
 private:
     juce::dsp::Phaser<float> ph;
 };
@@ -227,7 +228,7 @@ public:
     void reset() { ch.reset(); }
     void setParams (float rateHz, float depth_, float mix_)
     { ch.setRate (rateHz); ch.setDepth (depth_); ch.setCentreDelay (12.0f); ch.setFeedback (0.2f); ch.setMix (mix_); }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); ch.process (c); }
+    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); ch.process (c); }
 private:
     juce::dsp::Chorus<float> ch;
 };
@@ -248,8 +249,8 @@ public:
 
     void process (juce::dsp::AudioBlock<float>& block)
     {
-        const int ns = (int) block.getNumSamples();
-        const int nc = (int) block.getNumChannels();
+        const auto ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
         dry.copyFrom (block);
         auto* L = block.getChannelPointer (0);
         auto* R = nc > 1 ? block.getChannelPointer (1) : L;
@@ -294,7 +295,7 @@ public:
         pr.freezeMode = 0.0f;
         rv.setParameters (pr);
     }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); rv.process (c); }
+    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); rv.process (c); }
 private:
     juce::dsp::Reverb rv;
 };
@@ -309,7 +310,7 @@ public:
     { comp.setThreshold (threshDb); comp.setRatio (juce::jmax (1.0f, ratio)); comp.setAttack (attackMs); comp.setRelease (120.0f);
       makeup.setGainDecibels (makeupDb); }
     void process (juce::dsp::AudioBlock<float>& block)
-    { juce::dsp::ProcessContextReplacing<float> c (block); comp.process (c); makeup.process (c); }
+    { juce::dsp::ProcessContextReplacing c (block); comp.process (c); makeup.process (c); }
 private:
     juce::dsp::Compressor<float> comp;
     juce::dsp::Gain<float> makeup;
@@ -340,7 +341,7 @@ public:
         if (hiMidDb != lastHiMid) { lastHiMid = hiMidDb; applyHiMid (hiMidDb); }
         if (highDb  != lastHigh)  { lastHigh  = highDb;  applyHigh  (highDb); }
     }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); chain.process (c); }
+    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); chain.process (c); }
 private:
     using Coef = juce::dsp::IIR::Coefficients<float>;
     void applyLow   (float dB) { *chain.get<0>().state = *Coef::makeLowShelf   (sr, 120.0f,  0.707f, juce::Decibels::decibelsToGain (dB)); }
@@ -372,8 +373,8 @@ public:
     }
     void process (juce::dsp::AudioBlock<float>& block)
     {
-        const int ns = (int) block.getNumSamples();
-        const int nc = (int) block.getNumChannels();
+        const auto ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
         dry.copyFrom (block);
         for (int c = 0; c < nc; ++c)
         {

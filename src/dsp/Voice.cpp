@@ -1,4 +1,5 @@
 #include "Voice.h"
+#include <array>
 
 namespace zw
 {
@@ -38,7 +39,7 @@ float ZWVoice::lfoFreqHz (int i) const
 {
     if (ParamRefs::on (p.lfo[i].sync))
     {
-        static const double beats[6] = { 4.0, 2.0, 1.0, 0.5, 0.25, 0.125 };
+        static constexpr std::array<double, 6> beats { 4.0, 2.0, 1.0, 0.5, 0.25, 0.125 };
         const int div = juce::jlimit (0, 5, (int) p.lfo[i].ratediv->load());
         double bpm = bpmRef.load();
         if (bpm <= 0.0) bpm = 120.0;
@@ -142,7 +143,7 @@ void ZWVoice::updateBlockParams (int numSamples)
                           (int) p.lfo[i].mode->load());
 
     // ---- Gather modulation source values ----
-    float src[kNumModSources] = {};
+    std::array<float, kNumModSources> src {};
     src[(int) ModSource::Env1] = ampEnv.getValue();
     src[(int) ModSource::Env2] = env2.processBlock (numSamples);
     src[(int) ModSource::Env3] = env3.processBlock (numSamples);
@@ -155,8 +156,8 @@ void ZWVoice::updateBlockParams (int numSamples)
     src[(int) ModSource::Velocity] = rawVelocity;
     src[(int) ModSource::Note]     = noteNorm;
 
-    float destSums[kNumModDests] = {};
-    matrix.computeDestSums (src, destSums);
+    std::array<float, kNumModDests> destSums {};
+    matrix.computeDestSums (src.data(), destSums.data());
 
     auto modded = [&] (ModDest d)
     {
@@ -173,13 +174,13 @@ void ZWVoice::updateBlockParams (int numSamples)
     };
 
     if (aOn)
-        oscA.update (modded (ModDest::OscAWt), modded (ModDest::OscAWarp), (int) p.a.unison->load(),
-                     modded (ModDest::OscADetune), modded (ModDest::OscALevel), modded (ModDest::OscAPan),
-                     p.a.uniwidth->load(), freqFor (p.a));
+        oscA.update ({ modded (ModDest::OscAWt), modded (ModDest::OscAWarp), (int) p.a.unison->load(),
+                       modded (ModDest::OscADetune), modded (ModDest::OscALevel), modded (ModDest::OscAPan),
+                       p.a.uniwidth->load(), freqFor (p.a) });
     if (bOn)
-        oscB.update (modded (ModDest::OscBWt), modded (ModDest::OscBWarp), (int) p.b.unison->load(),
-                     modded (ModDest::OscBDetune), modded (ModDest::OscBLevel), modded (ModDest::OscBPan),
-                     p.b.uniwidth->load(), freqFor (p.b));
+        oscB.update ({ modded (ModDest::OscBWt), modded (ModDest::OscBWarp), (int) p.b.unison->load(),
+                       modded (ModDest::OscBDetune), modded (ModDest::OscBLevel), modded (ModDest::OscBPan),
+                       p.b.uniwidth->load(), freqFor (p.b) });
 
     if (subOn)
         sub.update ((int) p.subWave->load(), (int) p.subOctave->load(),

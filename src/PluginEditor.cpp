@@ -2,6 +2,7 @@
 #include "ui/Theme.h"
 #include "ui/Displays.h"
 #include "Parameters.h"
+#include <array>
 
 using APVTS = juce::AudioProcessorValueTreeState;
 
@@ -55,10 +56,9 @@ private:
 class Module : public juce::Component
 {
 public:
-    Module (const juce::String& t, ZWLookAndFeel& lf) : title (t)
-    {
-        titleFont = lf.displayFont (10.5f, true).withExtraKerningFactor (0.16f);
-    }
+    Module (const juce::String& t, const ZWLookAndFeel& lf)
+        : title (t), titleFont (lf.displayFont (10.5f, true).withExtraKerningFactor (0.16f))
+    {}
     void paint (juce::Graphics& g) override
     {
         auto r = getLocalBounds().toFloat();
@@ -101,9 +101,9 @@ public:
         addAndMakeVisible (adsr); addAndMakeVisible (scope); addAndMakeVisible (meter);
 
         auto knob = [&] (const juce::String& id_, const juce::String& nm, juce::Colour arc = {})
-        { auto* k = new LabeledKnob (s, id_, nm, lf, true, arc); knobs.add (k); addAndMakeVisible (k); return k; };
+        { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, true, arc)); addAndMakeVisible (k); return k; };
         auto hslider = [&] (const juce::String& id_, const juce::String& nm)
-        { auto* k = new LabeledKnob (s, id_, nm, lf, false); knobs.add (k); addAndMakeVisible (k); return k; };
+        { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, false)); addAndMakeVisible (k); return k; };
 
         // ENV1 ADSR
         envA = knob (id::env (1, "attack"), "ATK", theme::cyan);
@@ -125,13 +125,13 @@ public:
         oscPan  = hslider (id::osc ('A', "pan"),   "PAN");
 
         // Source mixer (level sliders + enables)
-        const char* srcIds[4]  = { "oscA_level", "oscB_level", "sub_level", "noise_level" };
-        const char* srcEn[4]   = { "oscA_enable", "oscB_enable", "sub_enable", "noise_enable" };
-        const char* srcName[4] = { "OSC A", "OSC B", "SUB", "NOISE" };
+        std::array<const char*, 4> srcIds  { "oscA_level", "oscB_level", "sub_level", "noise_level" };
+        std::array<const char*, 4> srcEn   { "oscA_enable", "oscB_enable", "sub_enable", "noise_enable" };
+        std::array<const char*, 4> srcName { "OSC A", "OSC B", "SUB", "NOISE" };
         for (int i = 0; i < 4; ++i)
         {
-            mixLvl[i] = new LabeledKnob (s, srcIds[i], srcName[i], lf, false);
-            knobs.add (mixLvl[i]); addAndMakeVisible (mixLvl[i]);
+            mixLvl[i] = knobs.add (std::make_unique<LabeledKnob> (s, srcIds[i], srcName[i], lf, false));
+            addAndMakeVisible (mixLvl[i]);
             mixEn[i] = makeToggle (srcEn[i], "ON");
         }
 
@@ -142,8 +142,8 @@ public:
         fmix   = knob (id::filterMix,    "MIX", theme::accent);
         filterType = makeCombo (id::filterType, choices::filterType());
         filterEnable = makeToggle (id::filterEnable, "FILTER");
-        const char* rId[4] = { "filter_routeA", "filter_routeB", "filter_routeS", "filter_routeN" };
-        const char* rNm[4] = { "A", "B", "S", "N" };
+        std::array<const char*, 4> rId { "filter_routeA", "filter_routeB", "filter_routeS", "filter_routeN" };
+        std::array<const char*, 4> rNm { "A", "B", "S", "N" };
         for (int i = 0; i < 4; ++i) route[i] = makeToggle (rId[i], rNm[i]);
 
         // Output
@@ -216,7 +216,7 @@ public:
         // Mod-sources bar label
         g.setColour (theme::tLabel); g.setFont (lnf.displayFont (9.5f, true).withExtraKerningFactor (0.16f));
         g.drawText ("MOD SOURCES", 20, modBarY, 110, 18, juce::Justification::centredLeft, false);
-        const char* chips[] = { "ENV1", "ENV2", "ENV3", "LFO1", "LFO2", "VEL", "NOTE" };
+        std::array<const char*, 7> chips { "ENV1", "ENV2", "ENV3", "LFO1", "LFO2", "VEL", "NOTE" };
         int cx = 130;
         for (auto* c : chips)
         {
@@ -329,70 +329,70 @@ private:
 
     juce::TextButton* makeToggle (const juce::String& id, const juce::String& text)
     {
-        auto* b = new juce::TextButton (text);
+        auto* b = toggles.add (std::make_unique<juce::TextButton> (text));
         b->setClickingTogglesState (true);
         b->setLookAndFeel (&lnf);
-        toggles.add (b); addAndMakeVisible (b);
-        tAtt.add (new APVTS::ButtonAttachment (proc.apvts, id, *b));
+        addAndMakeVisible (b);
+        tAtt.add (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, id, *b));
         return b;
     }
 
     juce::ComboBox* makeCombo (const juce::String& id, const juce::StringArray& items)
     {
-        auto* c = new juce::ComboBox();
+        auto* c = combos.add (std::make_unique<juce::ComboBox>());
         c->addItemList (items, 1);
         c->setLookAndFeel (&lnf);
-        combos.add (c); addAndMakeVisible (c);
-        cAtt.add (new APVTS::ComboBoxAttachment (proc.apvts, id, *c));
+        addAndMakeVisible (c);
+        cAtt.add (std::make_unique<APVTS::ComboBoxAttachment> (proc.apvts, id, *c));
         return c;
     }
 
     void buildLowerTabs()
     {
-        const char* names[4] = { "FX RACK", "MOD MATRIX", "ARP", "WAVETABLE" };
+        std::array<const char*, 4> names { "FX RACK", "MOD MATRIX", "ARP", "WAVETABLE" };
         for (int i = 0; i < 4; ++i)
         {
-            auto* b = new juce::TextButton (names[i]);
+            auto* b = tabBtn.add (std::make_unique<juce::TextButton> (names[i]));
             b->setClickingTogglesState (true);
             b->setRadioGroupId (100);
             b->setLookAndFeel (&lnf);
             b->onClick = [this, i] { showTab (i); };
-            tabBtn.add (b); addAndMakeVisible (b);
+            addAndMakeVisible (b);
         }
 
         // FX page: 10 enable toggles
-        auto* fxPage = new juce::Component();
-        const char* fxSlots[10] = { "hyper","distort","flanger","phaser","chorus","delay","reverb","comp","eq","filter" };
-        const char* fxNames[10] = { "Hyper","Distort","Flanger","Phaser","Chorus","Delay","Reverb","Comp","EQ","Filter" };
+        auto* fxPage = tabPages.add (std::make_unique<juce::Component>());
+        std::array<const char*, 10> fxSlots { "hyper","distort","flanger","phaser","chorus","delay","reverb","comp","eq","filter" };
+        std::array<const char*, 10> fxNames { "Hyper","Distort","Flanger","Phaser","Chorus","Delay","Reverb","Comp","EQ","Filter" };
         for (int i = 0; i < 10; ++i)
         {
-            auto* b = new juce::TextButton (fxNames[i]);
+            auto* b = toggles.add (std::make_unique<juce::TextButton> (fxNames[i]));
             b->setClickingTogglesState (true); b->setLookAndFeel (&lnf);
-            toggles.add (b); fxPage->addChildComponent (b); b->setVisible (true);
-            tAtt.add (new APVTS::ButtonAttachment (proc.apvts, id::fx (fxSlots[i], "enable"), *b));
+            fxPage->addChildComponent (b); b->setVisible (true);
+            tAtt.add (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, id::fx (fxSlots[i], "enable"), *b));
             fxToggles[i] = b;
         }
         fxPage->setInterceptsMouseClicks (false, true);
-        fxPageComp = fxPage; tabPages.add (fxPage); addChildComponent (fxPage);
+        fxPageComp = fxPage; addChildComponent (fxPage);
 
         // Matrix page: route list (read-only label)
-        auto* mxPage = new RouteList (proc.getPresetManager()); // placeholder using mod matrix via processor
-        matrixPage = mxPage; tabPages.add (mxPage); addChildComponent (mxPage);
+        auto* mxPage = tabPages.add (std::make_unique<RouteList> (proc.getPresetManager())); // placeholder using mod matrix via processor
+        matrixPage = mxPage; addChildComponent (mxPage);
 
         // Arp page: run + rate + mode + 16 steps
-        auto* arpPage = new juce::Component();
+        auto* arpPage = tabPages.add (std::make_unique<juce::Component>());
         arpRun  = makeToggleOn (arpPage, id::arpEnable, "RUN");
         arpRate = makeComboOn (arpPage, id::arpRate, choices::arpRate());
         arpMode = makeComboOn (arpPage, id::arpMode, choices::arpMode());
         for (int i = 0; i < 16; ++i)
             arpStep[i] = makeToggleOn (arpPage, id::arpStep (i + 1), juce::String (i + 1));
-        arpPageComp = arpPage; tabPages.add (arpPage); addChildComponent (arpPage);
+        arpPageComp = arpPage; addChildComponent (arpPage);
 
         // Wavetable page: frame slider (OSC A WT)
-        auto* wtPage = new juce::Component();
-        wtFrame = new LabeledKnob (proc.apvts, id::osc ('A', "wtpos"), "FRAME POSITION", lnf, false);
-        knobs.add (wtFrame); wtPage->addAndMakeVisible (wtFrame);
-        wtPageComp = wtPage; tabPages.add (wtPage); addChildComponent (wtPage);
+        auto* wtPage = tabPages.add (std::make_unique<juce::Component>());
+        wtFrame = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::osc ('A', "wtpos"), "FRAME POSITION", lnf, false));
+        wtPage->addAndMakeVisible (wtFrame);
+        wtPageComp = wtPage; addChildComponent (wtPage);
 
         tabBtn[0]->setToggleState (true, juce::dontSendNotification);
         showTab (0);
@@ -400,16 +400,16 @@ private:
 
     juce::TextButton* makeToggleOn (juce::Component* parent, const juce::String& id, const juce::String& text)
     {
-        auto* b = new juce::TextButton (text); b->setClickingTogglesState (true); b->setLookAndFeel (&lnf);
-        toggles.add (b); parent->addAndMakeVisible (b);
-        tAtt.add (new APVTS::ButtonAttachment (proc.apvts, id, *b));
+        auto* b = toggles.add (std::make_unique<juce::TextButton> (text)); b->setClickingTogglesState (true); b->setLookAndFeel (&lnf);
+        parent->addAndMakeVisible (b);
+        tAtt.add (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, id, *b));
         return b;
     }
     juce::ComboBox* makeComboOn (juce::Component* parent, const juce::String& id, const juce::StringArray& items)
     {
-        auto* c = new juce::ComboBox(); c->addItemList (items, 1); c->setLookAndFeel (&lnf);
-        combos.add (c); parent->addAndMakeVisible (c);
-        cAtt.add (new APVTS::ComboBoxAttachment (proc.apvts, id, *c));
+        auto* c = combos.add (std::make_unique<juce::ComboBox>()); c->addItemList (items, 1); c->setLookAndFeel (&lnf);
+        parent->addAndMakeVisible (c);
+        cAtt.add (std::make_unique<APVTS::ComboBoxAttachment> (proc.apvts, id, *c));
         return c;
     }
 
@@ -491,20 +491,20 @@ private:
     LabeledKnob* oscDet{};
     LabeledKnob* oscLvl{};
     LabeledKnob* oscPan{};
-    LabeledKnob* mixLvl[4]{};
+    std::array<LabeledKnob*, 4> mixLvl{};
     LabeledKnob* cutoff{};
     LabeledKnob* reso{};
     LabeledKnob* drive{};
     LabeledKnob* fmix{};
     LabeledKnob* master{};
-    LabeledKnob* macro[4]{};
+    std::array<LabeledKnob*, 4> macro{};
     LabeledKnob* wtFrame{};
-    juce::TextButton* mixEn[4]{};
+    std::array<juce::TextButton*, 4> mixEn{};
     juce::TextButton* filterEnable{};
-    juce::TextButton* route[4]{};
+    std::array<juce::TextButton*, 4> route{};
     juce::TextButton* arpRun{};
-    juce::TextButton* arpStep[16]{};
-    juce::TextButton* fxToggles[10]{};
+    std::array<juce::TextButton*, 16> arpStep{};
+    std::array<juce::TextButton*, 10> fxToggles{};
     juce::ComboBox* filterType{};
     juce::ComboBox* arpRate{};
     juce::ComboBox* arpMode{};
@@ -526,7 +526,7 @@ private:
 
 //==============================================================================
 ZandersWaveAudioProcessorEditor::ZandersWaveAudioProcessorEditor (ZandersWaveAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p)
+    : AudioProcessorEditor (&p)
 {
     setLookAndFeel (&lnf);
     panel = std::make_unique<zw::ZWPanel> (p, lnf);

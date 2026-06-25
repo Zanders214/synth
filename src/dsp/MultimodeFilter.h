@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include "FastMath.h"
 
@@ -94,8 +95,8 @@ private:
     float  k = 1.0f;
     float  driveGain = 1.0f;
     float  driveComp = 1.0f;
-    float  ic1[2][2] = { { 0, 0 }, { 0, 0 } };
-    float  ic2[2][2] = { { 0, 0 }, { 0, 0 } };
+    std::array<std::array<float, 2>, 2> ic1 {{ { 0, 0 }, { 0, 0 } }};
+    std::array<std::array<float, 2>, 2> ic2 {{ { 0, 0 }, { 0, 0 } }};
 };
 
 } // namespace zw

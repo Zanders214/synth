@@ -46,7 +46,7 @@ public:
             if (r0 == nullptr) return 0.0f;
             const float ph  = phase01 - std::floor (phase01);
             const float pos = ph * (float) kFrameSize;
-            const int   i0  = (int) pos;
+            const auto  i0  = (int) pos;
             const int   i1  = (i0 + 1) & (kFrameSize - 1);
             const float pf  = pos - (float) i0;
             const float s0  = r0[i0] + (r0[i1] - r0[i0]) * pf;

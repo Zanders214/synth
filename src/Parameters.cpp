@@ -1,5 +1,7 @@
 #include "Parameters.h"
 
+#include <array>
+
 namespace zw
 {
 
@@ -158,7 +160,7 @@ Layout createParameterLayout()
     addLfo (l, 4, 0.50f);
 
     // ---- Macros ------------------------------------------------------------
-    const float macroDef[4] = { 0.50f, 0.20f, 0.00f, 0.74f };
+    const std::array<float, 4> macroDef { 0.50f, 0.20f, 0.00f, 0.74f };
     for (int i = 1; i <= 4; ++i)
         addPct (l, id::macro (i), "Macro " + juce::String (i), macroDef[i - 1]);
 
@@ -172,7 +174,7 @@ Layout createParameterLayout()
     addInt    (l, id::arpOctaves, "Arp Octaves", 1, 4, 1);
     addPct    (l, id::arpGate,    "Arp Gate",    0.5f);
     addPct    (l, id::arpSwing,   "Arp Swing",   0.0f);
-    const int stepDef[16] = { 1,0,1,1,0,1,1,0,1,0,1,1,0,1,0,1 };
+    const std::array<int, 16> stepDef { 1,0,1,1,0,1,1,0,1,0,1,1,0,1,0,1 };
     for (int i = 1; i <= 16; ++i)
         addBool (l, id::arpStep (i), "Arp Step " + juce::String (i), stepDef[i - 1] != 0);
 

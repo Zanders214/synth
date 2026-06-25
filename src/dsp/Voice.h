@@ -10,6 +10,7 @@
 #include "ModMatrix.h"
 #include "ParamRefs.h"
 #include "RtSafety.h"
+#include <array>
 #include <atomic>
 
 namespace zw
@@ -41,6 +42,7 @@ public:
     void controllerMoved (int, int) override { /* No MIDI CC handling: modulation is driven by the mod matrix. */ }
     void setCurrentPlaybackSampleRate (double newRate) override;
     void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) ZW_RT_NONBLOCKING override;
+    using juce::SynthesiserVoice::renderNextBlock;
 
 private:
     void updateBlockParams (int numSamples);
@@ -69,7 +71,7 @@ private:
     Envelope            ampEnv;
     Envelope            env2;
     Envelope            env3;
-    Lfo                 lfo[4];
+    std::array<Lfo, 4>  lfo;
 
     double noteFreq = 440.0;     // gliding (sounding) frequency
     double targetFreq = 440.0;   // destination pitch

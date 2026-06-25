@@ -23,7 +23,6 @@ private:
     static constexpr int kDesignW = 1320;
     static constexpr int kDesignH = 900;
 
-    ZandersWaveAudioProcessor& processorRef;
     zw::ZWLookAndFeel lnf;
     std::unique_ptr<zw::ZWPanel> panel;
 

@@ -75,7 +75,7 @@ private:
 
     void recalc() noexcept
     {
-        const float sr = (float) sampleRate;
+        const auto sr = (float) sampleRate;
         const float aS = juce_maxf (1.0f, attack  * sr);
         const float dS = juce_maxf (1.0f, decay   * sr);
         const float rS = juce_maxf (1.0f, release * sr);

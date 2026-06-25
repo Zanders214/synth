@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
 #include <cmath>
 #include "FastMath.h"
 
@@ -69,7 +70,7 @@ public:
     enum Type { White = 0, Pink, Vinyl };
 
     void prepare (double) noexcept { reset(); }
-    void reset() noexcept { lp = 0.0f; for (auto& s : pinkState) s = 0.0f; crackle = 0.0f; }
+    void reset() noexcept { lp = 0.0f; for (auto& s : pinkState) { s = 0.0f; } crackle = 0.0f; }
 
     void update (int type_, float color01, float level01) noexcept
     {
@@ -126,7 +127,7 @@ private:
     float gain = 0.0f;
     float lp = 0.0f;
     float crackle = 0.0f;
-    float pinkState[7] = { 0,0,0,0,0,0,0 };
+    std::array<float, 7> pinkState { 0,0,0,0,0,0,0 };
 };
 
 } // namespace zw

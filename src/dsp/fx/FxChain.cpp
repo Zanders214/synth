@@ -17,7 +17,7 @@ void FxChain::reset()
     delay.reset(); reverb.reset(); comp.reset(); eq.reset(); filterFx.reset();
 }
 
-void FxChain::prepareParams (juce::AudioProcessorValueTreeState& s)
+void FxChain::prepareParams (const juce::AudioProcessorValueTreeState& s)
 {
     auto g = [&s] (const char* slot, const char* p) { return s.getRawParameterValue (id::fx (slot, p)); };
 

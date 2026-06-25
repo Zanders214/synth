@@ -3,16 +3,16 @@
 namespace zw
 {
 
-static const char* const kSourceIds[kNumModSources] = {
+static constexpr std::array<const char*, kNumModSources> kSourceIds = {{
     "ENV1", "ENV2", "ENV3", "LFO1", "LFO2", "LFO3", "LFO4",
     "MACRO1", "MACRO2", "MACRO3", "MACRO4", "VEL", "NOTE"
-};
+}};
 
-static const char* const kDestIds[kNumModDests] = {
+static constexpr std::array<const char*, kNumModDests> kDestIds = {{
     "aWt", "aWarp", "aLvl", "aPan", "aDet",
     "bWt", "bWarp", "bLvl", "bPan", "bDet",
     "subLvl", "noiLvl", "cut", "res", "drive"
-};
+}};
 
 juce::String ModMatrix::sourceId (ModSource s) { return kSourceIds[(int) s]; }
 juce::String ModMatrix::destId   (ModDest d)   { return kDestIds[(int) d]; }

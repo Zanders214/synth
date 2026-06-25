@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782419617649,
+  "lastUpdate": 1782421024756,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -307,6 +307,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 246374.753,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ee8c9505aace6edfbcf8c49eeb07df6daf1cbba2",
+          "message": "ci: build unit_tests unoptimized so coverage maps to the header DSP (#15)\n\nOpenCppCoverage reported near-zero coverage for the header-only DSP (Wavetable.h,\nParamRefs.h, Lfo.h, Envelope.h, Effects.h, ...) because the Release build inlines\nthose bodies away, so the lines can't be mapped — dragging new_coverage to 76%\ndespite the modules being thoroughly tested. Build the unit_tests target with\n/Od /Ob0 (no optimisation/inlining) + /Zi so coverage attributes correctly. The\nplugin/render_smoke/pluginval targets stay optimised; only the coverage target\nchanges. Tests still pass (907,689 checks).\n\nCo-authored-by: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-06-25T22:53:54+02:00",
+          "tree_id": "d3696967c18a8b3bc66215449d6a2f4694b18b3c",
+          "url": "https://github.com/Zanders214/synth/commit/ee8c9505aace6edfbcf8c49eeb07df6daf1cbba2"
+        },
+        "date": 1782421024457,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 396425.21,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.716,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 159450.239,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 236255.264,
             "unit": "ns/block"
           }
         ]

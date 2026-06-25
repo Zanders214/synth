@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782392808412,
+  "lastUpdate": 1782410430715,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -175,6 +175,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 225499.876,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0555f67e6980366b259704fb4d73d468293c9c45",
+          "message": "SonarCloud cleanup: fix 98 code smells, suppress 29 with rationale (#12)\n\n* SonarCloud cleanup: fix 98 code smells, suppress 29 intentional/false-positive\n\nSecond pass over the dev-branch SonarCloud findings (128 reported, 127 distinct).\nEvery issue was a maintainability code smell - zero bugs, zero vulnerabilities.\n\nFixed in code (98):\n- S5945 C-style arrays -> std::array (DSP arrays stay on the stack, never vector)\n- S5827 redundant explicit types -> auto\n- S5025 raw new -> std::make_unique into juce::OwnedArray (editor children)\n- S6012 CTAD on juce::dsp process contexts\n- S995 reference-to-const params; S5817 const method; S1242 name-hiding using-decl\n- S3230 member-init-list moves; S2681 brace blocks; S1874 juce::Font -> FontOptions\n- S107 bundle 8 params into a struct; S1068 drop unused field\n- S3776/S134 extract Arpeggiator::emitStep (removes deep nesting + high complexity)\n\nSuppressed with documented rationale in sonar-project.properties (29):\n- S8417 atomic memory ordering - deliberate lock-free SPSC acquire/release (RT-safety)\n- S1820 large structs - inherent to a synth editor / voice / param cache\n- S3642 plain enums - used as APVTS choice indices (int-coupled)\n- S5025/S5008/S5951/S1242 - JUCE framework-mandated signatures\n- plus 4 analyzer false positives\n\nVerified: Release build green (VST3 + Standalone + render_smoke); smoke output\nbyte-identical to baseline (RMS=0.252363, 11 arp note-ons, presets restored);\neditor renders correctly via ui_snapshot.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n* Fix S995 cascade: ParamRefs::prepare param to const-ref\n\nMaking prepOsc's APVTS param const-ref (this PR) exposed that its only caller,\nParamRefs::prepare, now passes 's' solely to const consumers, so SonarCloud's\nPR scan flagged it (cpp:S995). prepare() uses only getRawParameterValue() and\ngetParameter(), both const, so const-ref is safe. The caller passes the\nprocessor's apvts member (an lvalue), so the chain terminates with no further\ncascade. Build green, smoke output unchanged.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-06-25T20:57:18+03:00",
+          "tree_id": "29201e8ab33f53f34336fee1257f06130bf3d7e8",
+          "url": "https://github.com/Zanders214/synth/commit/0555f67e6980366b259704fb4d73d468293c9c45"
+        },
+        "date": 1782410430431,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 397534.548,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.727,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 159590.556,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 240086.921,
             "unit": "ns/block"
           }
         ]

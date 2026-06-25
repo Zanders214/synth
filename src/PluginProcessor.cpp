@@ -44,7 +44,7 @@ void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     masterGain.setRampDurationSeconds (0.02);
 }
 
-void ZandersWaveAudioProcessor::releaseResources() {}
+void ZandersWaveAudioProcessor::releaseResources() { /* no-op: nothing to release */ }
 
 bool ZandersWaveAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
@@ -63,7 +63,7 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     buffer.clear();
 
     // Track host tempo for tempo-synced LFOs (and later arp/FX).
-    if (auto* ph = getPlayHead())
+    if (const auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);

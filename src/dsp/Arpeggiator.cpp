@@ -36,7 +36,7 @@ int Arpeggiator::buildSequence (std::vector<int>& seq)
     const int octs = juce::jlimit (1, 4, (int) val (pOct));
 
     baseScratch.clear();
-    for (auto& h : held) baseScratch.push_back (h.note);
+    for (const auto& h : held) baseScratch.push_back (h.note);
 
     if (mode == 5)                  { /* As Played: keep order */ }
     else if (mode == 1)             { std::sort (baseScratch.begin(), baseScratch.end(), std::greater<int>()); }
@@ -147,7 +147,7 @@ void Arpeggiator::process (juce::MidiBuffer& midi, int numSamples, double bpm)
 
             if (mode == 4)   // Chord: all held notes
             {
-                for (auto& h : held)
+                for (const auto& h : held)
                 {
                     out.addEvent (juce::MidiMessage::noteOn (1, h.note, h.vel), i);
                     activeNotes.push_back (h.note);

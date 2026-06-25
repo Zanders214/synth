@@ -93,9 +93,18 @@ private:
     double sampleRate = 44100.0;
     Stage  stage = Stage::Idle;
     float  value = 0.0f;
-    float  attack = 0.01f, decay = 0.3f, sustain = 0.7f, release = 0.4f;
-    float  ratioA = 0.3f, ratioDR = 0.0001f;
-    float  attackCoef = 0, attackBase = 0, decayCoef = 0, decayBase = 0, releaseCoef = 0, releaseBase = 0;
+    float  attack = 0.01f;
+    float  decay = 0.3f;
+    float  sustain = 0.7f;
+    float  release = 0.4f;
+    float  ratioA = 0.3f;
+    float  ratioDR = 0.0001f;
+    float  attackCoef = 0;
+    float  attackBase = 0;
+    float  decayCoef = 0;
+    float  decayBase = 0;
+    float  releaseCoef = 0;
+    float  releaseBase = 0;
 };
 
 } // namespace zw

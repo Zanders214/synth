@@ -35,7 +35,8 @@ public:
     static void glowPath (juce::Graphics&, const juce::Path&, juce::Colour, float thickness, float glow);
 
 private:
-    juce::Typeface::Ptr display, mono;
+    juce::Typeface::Ptr display;
+    juce::Typeface::Ptr mono;
 };
 
 } // namespace zw

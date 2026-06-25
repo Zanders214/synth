@@ -29,7 +29,8 @@ struct DryStore
     void prepare (const juce::dsp::ProcessSpec& s) { buf.setSize ((int) s.numChannels, (int) s.maximumBlockSize, false, false, true); }
     void copyFrom (const juce::dsp::AudioBlock<float>& block)
     {
-        const int nc = (int) block.getNumChannels(), ns = (int) block.getNumSamples();
+        const int nc = (int) block.getNumChannels();
+        const int ns = (int) block.getNumSamples();
         for (int c = 0; c < nc; ++c)
             buf.copyFrom (c, 0, block.getChannelPointer ((size_t) c), ns);
     }
@@ -59,17 +60,18 @@ public:
         for (int i = 0; i < ns; ++i)
         {
             const float in = 0.5f * (L[i] + R[i]);
-            float wl = 0.0f, wr = 0.0f;
+            float wl = 0.0f;
+            float wr = 0.0f;
             for (int v = 0; v < voices; ++v)
             {
-                lfoPhase[v] += (0.15f + 0.05f * v + det * 0.4f) / (float) sr;
+                lfoPhase[v] += (0.15f + 0.05f * static_cast<float>(v) + det * 0.4f) / (float) sr;
                 if (lfoPhase[v] >= 1.0f) lfoPhase[v] -= 1.0f;
                 const float mod = std::sin (lfoPhase[v] * juce::MathConstants<float>::twoPi);
                 const float dms = 8.0f + det * 12.0f + mod * (2.0f + det * 6.0f);   // ms
                 line[v].setDelay (juce::jmax (1.0f, (float) (dms * 0.001 * sr)));
                 line[v].pushSample (0, in);
                 const float s = line[v].popSample (0);
-                const float panv = (voices > 1) ? ((float) v / (voices - 1) * 2.0f - 1.0f) * width : 0.0f;
+                const float panv = (voices > 1) ? ((float) v / static_cast<float>(voices - 1) * 2.0f - 1.0f) * width : 0.0f;
                 wl += s * (0.5f - 0.5f * panv);
                 wr += s * (0.5f + 0.5f * panv);
             }
@@ -80,7 +82,10 @@ public:
     }
 
 private:
-    double sr = 44100.0; int voices = 4; float det = 0.3f, width = 0.5f, mix = 1.0f;
+    double sr = 44100.0; int voices = 4;
+    float det = 0.3f;
+    float width = 0.5f;
+    float mix = 1.0f;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> line[8];
     float lfoPhase[8] = { 0,0,0,0,0,0,0,0 };
     DryStore dry;
@@ -113,7 +118,8 @@ public:
         const float pre = 1.0f + drive * 24.0f;
 
         auto up = os.processSamplesUp (block);
-        const int nc = (int) up.getNumChannels(), ns = (int) up.getNumSamples();
+        const int nc = (int) up.getNumChannels();
+        const int ns = (int) up.getNumSamples();
         for (int c = 0; c < nc; ++c)
         {
             auto* d = up.getChannelPointer ((size_t) c);
@@ -139,9 +145,12 @@ private:
         }
     }
     void applyTone (float toneAmt)
-    { *tone.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (sr, 2500.0, 0.707, juce::Decibels::decibelsToGain ((toneAmt - 0.5f) * 18.0f)); }
+    { *tone.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (sr, 2500.0f, 0.707f, juce::Decibels::decibelsToGain ((toneAmt - 0.5f) * 18.0f)); }
 
-    double sr = 44100.0; int mode = 0; float drive = 0.3f, mix = 1.0f, outGain = 0.8f;
+    double sr = 44100.0; int mode = 0;
+    float drive = 0.3f;
+    float mix = 1.0f;
+    float outGain = 0.8f;
     float lastTone = 0.5f;
     juce::dsp::Oversampling<float> os;
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> tone;
@@ -186,7 +195,12 @@ public:
     }
 
 private:
-    double sr = 44100.0; float rate = 0.5f, depth = 0.5f, fb = 0.3f, mix = 0.5f, phase = 0.0f;
+    double sr = 44100.0;
+    float rate = 0.5f;
+    float depth = 0.5f;
+    float fb = 0.3f;
+    float mix = 0.5f;
+    float phase = 0.0f;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> line;
     DryStore dry;
 };
@@ -253,7 +267,11 @@ public:
     }
 
 private:
-    double sr = 44100.0; float timeSamps = 14400.0f, fb = 0.35f, width = 0.5f, mix = 0.3f;
+    double sr = 44100.0;
+    float timeSamps = 14400.0f;
+    float fb = 0.35f;
+    float width = 0.5f;
+    float mix = 0.3f;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> line;
     DryStore dry;
 };
@@ -304,7 +322,11 @@ public:
     {
         sr = s.sampleRate;
         chain.prepare (s);
-        lastLow = lastLoMid = lastHiMid = lastHigh = 0.0f;   // prime all bands flat,
+        // prime all bands flat,
+        lastLow   = 0.0f;
+        lastLoMid = 0.0f;
+        lastHiMid = 0.0f;
+        lastHigh  = 0.0f;
         applyLow (0.0f); applyLoMid (0.0f); applyHiMid (0.0f); applyHigh (0.0f);  // off the audio thread
     }
     void reset() { chain.reset(); }
@@ -320,14 +342,17 @@ public:
     void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); chain.process (c); }
 private:
     using Coef = juce::dsp::IIR::Coefficients<float>;
-    void applyLow   (float dB) { *chain.get<0>().state = *Coef::makeLowShelf   (sr, 120.0,  0.707, juce::Decibels::decibelsToGain (dB)); }
-    void applyLoMid (float dB) { *chain.get<1>().state = *Coef::makePeakFilter (sr, 500.0,  0.9,   juce::Decibels::decibelsToGain (dB)); }
-    void applyHiMid (float dB) { *chain.get<2>().state = *Coef::makePeakFilter (sr, 3000.0, 0.9,   juce::Decibels::decibelsToGain (dB)); }
-    void applyHigh  (float dB) { *chain.get<3>().state = *Coef::makeHighShelf  (sr, 8000.0, 0.707, juce::Decibels::decibelsToGain (dB)); }
+    void applyLow   (float dB) { *chain.get<0>().state = *Coef::makeLowShelf   (sr, 120.0f,  0.707f, juce::Decibels::decibelsToGain (dB)); }
+    void applyLoMid (float dB) { *chain.get<1>().state = *Coef::makePeakFilter (sr, 500.0f,  0.9f,   juce::Decibels::decibelsToGain (dB)); }
+    void applyHiMid (float dB) { *chain.get<2>().state = *Coef::makePeakFilter (sr, 3000.0f, 0.9f,   juce::Decibels::decibelsToGain (dB)); }
+    void applyHigh  (float dB) { *chain.get<3>().state = *Coef::makeHighShelf  (sr, 8000.0f, 0.707f, juce::Decibels::decibelsToGain (dB)); }
 
     using Dup = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     double sr = 44100.0;
-    float lastLow = 0.0f, lastLoMid = 0.0f, lastHiMid = 0.0f, lastHigh = 0.0f;
+    float lastLow = 0.0f;
+    float lastLoMid = 0.0f;
+    float lastHiMid = 0.0f;
+    float lastHigh = 0.0f;
     juce::dsp::ProcessorChain<Dup, Dup, Dup, Dup> chain;
 };
 
@@ -339,7 +364,8 @@ public:
     void reset() { filt.reset(); }
     void setParams (float cutoffHz, float reso, int type /*0 LP,1 HP,2 BP*/, float mix_)
     {
-        const int t = (type == 1) ? MultimodeFilter::HP12 : (type == 2 ? MultimodeFilter::BP12 : MultimodeFilter::LP12);
+        const int inner = (type == 2) ? MultimodeFilter::BP12 : MultimodeFilter::LP12;
+        const int t = (type == 1) ? MultimodeFilter::HP12 : inner;
         filt.setParams (t, cutoffHz, reso, 0.0f);
         mix = mix_;
     }

@@ -3,12 +3,12 @@
 namespace zw
 {
 
-static const char* kSourceIds[kNumModSources] = {
+static const char* const kSourceIds[kNumModSources] = {
     "ENV1", "ENV2", "ENV3", "LFO1", "LFO2", "LFO3", "LFO4",
     "MACRO1", "MACRO2", "MACRO3", "MACRO4", "VEL", "NOTE"
 };
 
-static const char* kDestIds[kNumModDests] = {
+static const char* const kDestIds[kNumModDests] = {
     "aWt", "aWarp", "aLvl", "aPan", "aDet",
     "bWt", "bWarp", "bLvl", "bPan", "bDet",
     "subLvl", "noiLvl", "cut", "res", "drive"
@@ -101,7 +101,8 @@ void ModMatrix::fromValueTree (const juce::ValueTree& v)
     for (const auto& node : v)
     {
         if (! node.hasType ("ROUTE")) continue;
-        bool okS = false, okD = false;
+        bool okS = false;
+        bool okD = false;
         const auto s = sourceFromId (node.getProperty ("src").toString(), okS);
         const auto d = destFromId   (node.getProperty ("dest").toString(), okD);
         if (okS && okD)

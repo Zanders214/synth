@@ -21,7 +21,10 @@ public:
     {
         for (int c = 0; c < 2; ++c)
             for (int s = 0; s < 2; ++s)
-                ic1[c][s] = ic2[c][s] = 0.0f;
+            {
+                ic1[c][s] = 0.0f;
+                ic2[c][s] = 0.0f;
+            }
     }
 
     // cutoffHz, resonance 0..1, drive 0..1. Call once per block.
@@ -58,7 +61,7 @@ public:
     }
 
 private:
-    struct Out { float lp, bp, hp, notch; };
+    struct Out { float lp; float bp; float hp; float notch; };
 
     Out core (int ch, int stage, float v0) noexcept
     {
@@ -76,12 +79,20 @@ private:
         return o;
     }
 
-    static float clampf (float v, float lo, float hi) noexcept { return v < lo ? lo : (v > hi ? hi : v); }
+    static float clampf (float v, float lo, float hi) noexcept
+    {
+        const float high = v > hi ? hi : v;
+        return v < lo ? lo : high;
+    }
 
     double sampleRate = 44100.0;
     int    type = LP24;
-    float  a1 = 0, a2 = 0, a3 = 0, k = 1.0f;
-    float  driveGain = 1.0f, driveComp = 1.0f;
+    float  a1 = 0;
+    float  a2 = 0;
+    float  a3 = 0;
+    float  k = 1.0f;
+    float  driveGain = 1.0f;
+    float  driveComp = 1.0f;
     float  ic1[2][2] = { { 0, 0 }, { 0, 0 } };
     float  ic2[2][2] = { { 0, 0 }, { 0, 0 } };
 };

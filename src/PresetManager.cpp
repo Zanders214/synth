@@ -24,8 +24,7 @@ void PresetManager::applyState (const juce::ValueTree& wrapper)
 {
     if (wrapper.hasType (kWrapperType))
     {
-        auto params = wrapper.getChildWithName (apvts.state.getType());
-        if (params.isValid())
+        if (auto params = wrapper.getChildWithName (apvts.state.getType()); params.isValid())
             apvts.replaceState (params);
         modMatrix.fromValueTree (wrapper.getChildWithName ("MODMATRIX"));
     }
@@ -132,7 +131,7 @@ bool PresetManager::saveUserPreset (const juce::String& name)
 juce::StringArray PresetManager::getUserPresetNames() const
 {
     juce::StringArray names;
-    for (auto& f : getUserDir().findChildFiles (juce::File::findFiles, false, juce::String ("*") + kFileExt))
+    for (const auto& f : getUserDir().findChildFiles (juce::File::findFiles, false, juce::String ("*") + kFileExt))
         names.add (f.getFileNameWithoutExtension());
     names.sortNatural();
     return names;

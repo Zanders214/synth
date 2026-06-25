@@ -52,11 +52,11 @@ void ZWVoice::startNote (int midiNoteNumber, float vel, juce::SynthesiserSound*,
     midiNote    = midiNoteNumber;
     rawVelocity = vel;
     velocity    = 0.2f + 0.8f * vel;
-    noteNorm    = juce::jlimit (-1.0f, 1.0f, (midiNote - 60) / 48.0f);
+    noteNorm    = juce::jlimit (-1.0f, 1.0f, static_cast<float> (midiNote - 60) / 48.0f);
     pitchWheelMoved (pitchWheel);
 
     // Glide: start from the previous note's pitch (poly portamento) when enabled.
-    targetFreq = 440.0 * std::pow (2.0, (midiNote - 69 + pitchBendSemis) / 12.0);
+    targetFreq = 440.0 * std::pow (2.0, (static_cast<float> (midiNote - 69) + pitchBendSemis) / 12.0);
     const float glide = (p.glideTime != nullptr) ? p.glideTime->load() : 0.0f;
     noteFreq = (glide > 0.0001f) ? lastNoteFreqRef.load() : targetFreq;
     lastNoteFreqRef.store (targetFreq);
@@ -111,11 +111,11 @@ void ZWVoice::pitchWheelMoved (int newValue)
 
 void ZWVoice::updateBlockParams (int numSamples)
 {
-    targetFreq = 440.0 * std::pow (2.0, (midiNote - 69 + pitchBendSemis) / 12.0);
+    targetFreq = 440.0 * std::pow (2.0, (static_cast<float> (midiNote - 69) + pitchBendSemis) / 12.0);
 
     // Portamento: glide the sounding frequency toward the target over glide seconds.
-    const float glide = (p.glideTime != nullptr) ? p.glideTime->load() : 0.0f;
-    if (glide > 0.0001f && numSamples > 0)
+    if (const float glide = (p.glideTime != nullptr) ? p.glideTime->load() : 0.0f;
+        glide > 0.0001f && numSamples > 0)
     {
         const double coef = 1.0 - std::exp (-(double) numSamples / (glide * getSampleRate()));
         noteFreq += (targetFreq - noteFreq) * coef;
@@ -158,9 +158,9 @@ void ZWVoice::updateBlockParams (int numSamples)
     float destSums[kNumModDests] = {};
     matrix.computeDestSums (src, destSums);
 
-    auto modded = [&] (ModDest d) -> float
+    auto modded = [&] (ModDest d)
     {
-        auto* pr = p.dest[(int) d];
+        const auto* pr = p.dest[(int) d];
         const float base01 = pr->getValue();
         const float f01    = clamp01 (base01 + destSums[(int) d]);
         return pr->getNormalisableRange().convertFrom0to1 (f01);
@@ -207,15 +207,18 @@ void ZWVoice::renderNextBlock (juce::AudioBuffer<float>& buffer, int startSample
 
     for (int n = 0; n < numSamples; ++n)
     {
-        float fL = 0.0f, fR = 0.0f;   // routed to filter
-        float dL = 0.0f, dR = 0.0f;   // bypass (dry)
+        float fL = 0.0f;   // routed to filter
+        float fR = 0.0f;   // routed to filter
+        float dL = 0.0f;   // bypass (dry)
+        float dR = 0.0f;   // bypass (dry)
 
-        if (aOn)    { float l = 0, r = 0; oscA.renderAdd (l, r); if (rA) { fL += l; fR += r; } else { dL += l; dR += r; } }
-        if (bOn)    { float l = 0, r = 0; oscB.renderAdd (l, r); if (rB) { fL += l; fR += r; } else { dL += l; dR += r; } }
+        if (aOn)    { float l = 0; float r = 0; oscA.renderAdd (l, r); if (rA) { fL += l; fR += r; } else { dL += l; dR += r; } }
+        if (bOn)    { float l = 0; float r = 0; oscB.renderAdd (l, r); if (rB) { fL += l; fR += r; } else { dL += l; dR += r; } }
         if (subOn)  { float s = sub.render();   if (rS) { fL += s; fR += s; } else { dL += s; dR += s; } }
         if (noiseOn){ float s = noise.render(); if (rN) { fL += s; fR += s; } else { dL += s; dR += s; } }
 
-        float oL, oR;
+        float oL;
+        float oR;
         if (filterOn)
         {
             const float wL = filter.processSample (0, fL);

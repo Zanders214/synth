@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782385612366,
+  "lastUpdate": 1782389295159,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -87,6 +87,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 240328.93,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ecb37a292b873f89d69216a111ed5892f06bba00",
+          "message": "SonarCloud cleanup: safe mechanical code-smell fixes (#10)",
+          "timestamp": "2026-06-25T15:04:49+03:00",
+          "tree_id": "30f3729c1725c35d4ef243193fadc25bb9f9bbdf",
+          "url": "https://github.com/Zanders214/synth/commit/ecb37a292b873f89d69216a111ed5892f06bba00"
+        },
+        "date": 1782389294656,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 566682.991,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 5.313,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 321749.156,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 239861.395,
             "unit": "ns/block"
           }
         ]

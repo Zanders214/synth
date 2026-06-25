@@ -10,6 +10,14 @@
 #include "dsp/fx/FxChain.h"
 #include "PresetManager.h"
 
+// RealtimeSanitizer (clang -fsanitize=realtime) marks the audio callback as a
+// non-blocking context so any malloc/lock/syscall reachable from it is flagged.
+// The CMake `rt_check` target defines this to [[clang::nonblocking]]; every other
+// build (MSVC/SonarCloud) compiles it away to nothing.
+#ifndef ZW_RT_NONBLOCKING
+#define ZW_RT_NONBLOCKING
+#endif
+
 //==============================================================================
 // ZandersWave — Serum 2-class wavetable synthesizer.
 // M0 scaffold: a valid, loadable synth that outputs silence and exposes a single
@@ -26,7 +34,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) ZW_RT_NONBLOCKING override;
 
     //==========================================================================
     juce::AudioProcessorEditor* createEditor() override;

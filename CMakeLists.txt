@@ -131,3 +131,66 @@ target_link_libraries(ui_snapshot PRIVATE
     juce::juce_dsp
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
+
+# ---- Performance monitoring: RTSan + benchmark harnesses -------------------
+# Two opt-in dev/CI targets (see .github/workflows/quality.yml and perf.yml).
+# Both are EXCLUDE_FROM_ALL so the default and SonarCloud builds stay lean.
+option(ZW_RT_SANITIZE "Build rt_check with clang's RealtimeSanitizer (needs clang>=20)" OFF)
+option(ZW_BUILD_BENCH "Build the perf_bench micro-benchmark (fetches nanobench)"        OFF)
+
+# Real-time-safety check: drives the real plugin's processBlock under RTSan so
+# any malloc/lock/syscall on the audio thread aborts the run.
+if(ZW_RT_SANITIZE)
+    juce_add_console_app(rt_check PRODUCT_NAME "rt_check")
+    juce_generate_juce_header(rt_check)
+    set_target_properties(rt_check PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    target_sources(rt_check PRIVATE tests/rt_check.cpp ${ZW_SOURCES})
+    target_include_directories(rt_check PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_compile_definitions(rt_check PRIVATE
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0
+        JucePlugin_Name="ZandersWave"
+        "ZW_RT_NONBLOCKING=[[clang::nonblocking]]")
+    target_compile_options(rt_check PRIVATE -fsanitize=realtime)
+    target_link_options   (rt_check PRIVATE -fsanitize=realtime)
+    target_link_libraries(rt_check PRIVATE
+        ZandersWaveData
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_dsp
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+endif()
+
+# Performance micro-benchmark: times the DSP graph (voices / FX / full) and emits
+# github-action-benchmark JSON for trend tracking + PR regression alerts.
+if(ZW_BUILD_BENCH)
+    FetchContent_Declare(nanobench
+        GIT_REPOSITORY https://github.com/martinus/nanobench.git
+        GIT_TAG        v4.3.11
+        GIT_SHALLOW    TRUE)
+    FetchContent_MakeAvailable(nanobench)
+
+    juce_add_console_app(perf_bench PRODUCT_NAME "perf_bench")
+    juce_generate_juce_header(perf_bench)
+    set_target_properties(perf_bench PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    target_sources(perf_bench PRIVATE
+        tests/perf_bench.cpp
+        src/Parameters.cpp
+        src/PresetManager.cpp
+        src/dsp/Wavetable.cpp
+        src/dsp/ParamRefs.cpp
+        src/dsp/ModMatrix.cpp
+        src/dsp/Voice.cpp
+        src/dsp/fx/FxChain.cpp)   # render_smoke omits FxChain; perf_bench needs it
+    target_include_directories(perf_bench PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${nanobench_SOURCE_DIR}/src/include)   # header-only use (we define ANKERL_NANOBENCH_IMPLEMENT)
+    target_compile_definitions(perf_bench PRIVATE
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    target_link_libraries(perf_bench PRIVATE
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_dsp
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+endif()

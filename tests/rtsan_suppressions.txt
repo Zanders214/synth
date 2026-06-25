@@ -1,0 +1,17 @@
+# RealtimeSanitizer suppressions for rt_check (RTSAN_OPTIONS=suppressions=...).
+#
+# Keep this list TINY and documented. Each entry hides a known, understood,
+# audio-thread call from the gate; everything NOT listed here stays a hard
+# failure, which is the whole point of the check. When RTSan flags something new,
+# the default answer is to FIX the audio-thread code, not to add a line here.
+#
+# Format (clang RealtimeSanitizer):
+#   call-stack-contains:<pattern>     # suppress if the stack matches
+#   function-name-matches:<pattern>   # suppress a specific function (supports *)
+
+# JUCE merges on-screen-keyboard MIDI into the stream inside processBlock
+# (PluginProcessor.cpp:66) and MidiKeyboardState guards it with a CriticalSection.
+# This lock is a deliberate JUCE design for host-less keyboard input; it is the
+# one documented pre-existing audio-thread lock. Revisit if the on-screen
+# keyboard merge is ever moved off the audio thread.
+call-stack-contains:*MidiKeyboardState*

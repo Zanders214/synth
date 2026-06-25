@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782410430715,
+  "lastUpdate": 1782413003901,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -219,6 +219,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 240086.921,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7b345d10c6c338d4b63b9b4facdb02eee90104de",
+          "message": "Refactor Arpeggiator::process: extract absorbMidi (clears last S3776) (#13)\n\nemitStep (#12) cut process()'s cognitive complexity 56 -> 26, one over the 25\nlimit, so the issue survived as a carry-over. Extracting the MIDI-ingestion\nloop into absorbMidi() separates note ingestion from the step engine and drops\nprocess() to ~15. Build green; smoke output unchanged (11 note-ons). Takes the\ndev SonarCloud dashboard to 0 open issues.\n\nCo-authored-by: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-06-25T21:40:01+03:00",
+          "tree_id": "f9452bf46648fea3dc6680028c2c5fd1ccad7df2",
+          "url": "https://github.com/Zanders214/synth/commit/7b345d10c6c338d4b63b9b4facdb02eee90104de"
+        },
+        "date": 1782413002922,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 384424.83,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.604,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 158946.697,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 223801.886,
             "unit": "ns/block"
           }
         ]

@@ -116,7 +116,7 @@ juce::File PresetManager::getUserDir() const
     return dir;
 }
 
-bool PresetManager::saveUserPreset (const juce::String& name)
+bool PresetManager::saveUserPreset (const juce::String& name) const
 {
     const auto safe = juce::File::createLegalFileName (name);
     if (safe.isEmpty())

@@ -15,7 +15,7 @@ struct AnimatedComponent : public juce::Component, private juce::Timer
 {
     AnimatedComponent() { startTimerHz (30); }
     ~AnimatedComponent() override { stopTimer(); }
-    void timerCallback() override { phase += 0.02f; if (phase > 1000.0f) phase = 0.0f; repaint(); }
+    void timerCallback() override { phase += 0.02f; if (phase > 1000.0f) { phase = 0.0f; } repaint(); }
     float phase = 0.0f;
 };
 
@@ -32,11 +32,9 @@ inline void wellBackground (juce::Graphics& g, juce::Rectangle<float> r)
 class WavetableDisplay : public AnimatedComponent
 {
 public:
-    WavetableDisplay (juce::AudioProcessorValueTreeState& s, juce::String wtId, juce::String warpId)
-    {
-        wt   = s.getRawParameterValue (wtId);
-        warp = s.getRawParameterValue (warpId);
-    }
+    WavetableDisplay (const juce::AudioProcessorValueTreeState& s, juce::String wtId, juce::String warpId)
+        : wt (s.getRawParameterValue (wtId)), warp (s.getRawParameterValue (warpId))
+    {}
 
     void paint (juce::Graphics& g) override
     {
@@ -88,7 +86,7 @@ private:
 class FilterResponse : public AnimatedComponent
 {
 public:
-    explicit FilterResponse (juce::AudioProcessorValueTreeState& s)
+    explicit FilterResponse (const juce::AudioProcessorValueTreeState& s)
     {
         cut  = s.getRawParameterValue (id::filterCutoff);
         res  = s.getRawParameterValue (id::filterReso);
@@ -146,7 +144,7 @@ private:
 class AdsrDisplay : public AnimatedComponent
 {
 public:
-    AdsrDisplay (juce::AudioProcessorValueTreeState& s, int envIndex)
+    AdsrDisplay (const juce::AudioProcessorValueTreeState& s, int envIndex)
     {
         a = s.getRawParameterValue (id::env (envIndex, "attack"));
         d = s.getRawParameterValue (id::env (envIndex, "decay"));
@@ -160,7 +158,7 @@ public:
         wellBackground (g, r);
         auto bx = r.reduced (10.0f);
 
-        auto norm = [] (std::atomic<float>* p, float dflt) { return p ? juce::jlimit (0.0f, 1.0f, p->load() / 8.0f) : dflt; };
+        auto norm = [] (const std::atomic<float>* p, float dflt) { return p ? juce::jlimit (0.0f, 1.0f, p->load() / 8.0f) : dflt; };
         const float an = norm (a, 0.02f);
         const float dn = norm (d, 0.05f);
         const float rn = norm (rel, 0.08f);

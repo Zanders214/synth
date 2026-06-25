@@ -17,7 +17,7 @@ class FxChain
 {
 public:
     void prepare (const juce::dsp::ProcessSpec& spec);
-    void prepareParams (juce::AudioProcessorValueTreeState& apvts);
+    void prepareParams (const juce::AudioProcessorValueTreeState& apvts);
     void reset();
     void process (juce::dsp::AudioBlock<float>& block) ZW_RT_NONBLOCKING;
 

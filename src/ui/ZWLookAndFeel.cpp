@@ -33,13 +33,13 @@ juce::Typeface::Ptr ZWLookAndFeel::getTypefaceForFont (const juce::Font& f)
 
 juce::Font ZWLookAndFeel::displayFont (float h, bool bold) const
 {
-    juce::Font f (display); f.setHeight (h);
+    juce::Font f (juce::FontOptions (display).withHeight (h));
     return bold ? f.boldened() : f;
 }
 
 juce::Font ZWLookAndFeel::monoFont (float h) const
 {
-    juce::Font f (mono); f.setHeight (h); return f;
+    juce::Font f (juce::FontOptions (mono).withHeight (h)); return f;
 }
 
 void ZWLookAndFeel::glowPath (juce::Graphics& g, const juce::Path& p, juce::Colour c, float thickness, float glow)

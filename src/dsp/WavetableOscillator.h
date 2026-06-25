@@ -28,19 +28,30 @@ public:
     }
 
     // Per-block parameter update. detuneCents is the full spread; pan -1..1.
-    void update (float framePos01, float warp01, int unison, float detuneCents,
-                 float level01, float pan, float width01, double baseFreqHz) noexcept
+    struct UpdateParams
     {
-        framePos = framePos01;
-        warp     = warp01;
-        count    = juce::jlimit (1, kMaxUnison, unison);
+        float  framePos01;
+        float  warp01;
+        int    unison;
+        float  detuneCents;
+        float  level01;
+        float  pan;
+        float  width01;
+        double baseFreqHz;
+    };
+
+    void update (const UpdateParams& p) noexcept
+    {
+        framePos = p.framePos01;
+        warp     = p.warp01;
+        count    = juce::jlimit (1, kMaxUnison, p.unison);
 
         for (int i = 0; i < count; ++i)
         {
             const float spread = (count > 1) ? ((float) i / (float) (count - 1)) * 2.0f - 1.0f : 0.0f;
-            const float cents  = detuneCents * spread;
+            const float cents  = p.detuneCents * spread;
             const float ratio  = std::pow (2.0f, cents / 1200.0f);
-            const float freq   = (float) baseFreqHz * ratio;
+            const float freq   = (float) p.baseFreqHz * ratio;
             inc[(size_t) i]    = freq / (float) sampleRate;
             freqHz[(size_t) i] = freq;
 
@@ -48,14 +59,14 @@ public:
             if (table != nullptr)
                 cursor[(size_t) i] = table->makeCursor (framePos, freq, sampleRate);
 
-            const float vpan   = juce::jlimit (-1.0f, 1.0f, pan + width01 * spread);
+            const float vpan   = juce::jlimit (-1.0f, 1.0f, p.pan + p.width01 * spread);
             const float ang    = (vpan * 0.5f + 0.5f) * juce::MathConstants<float>::halfPi;
             gainL[(size_t) i]  = std::cos (ang);
             gainR[(size_t) i]  = std::sin (ang);
         }
 
         // Equal-ish power across unison voices.
-        gain = level01 / std::sqrt ((float) count);
+        gain = p.level01 / std::sqrt ((float) count);
     }
 
     void renderAdd (float& outL, float& outR) noexcept

@@ -94,7 +94,7 @@ Wavetable::Cursor Wavetable::makeCursor (float framePos01, double freqHz, double
     const float* base = mips[(size_t) m].data.data();
 
     const float framePos = juce::jlimit (0.0f, 1.0f, framePos01) * (float) (numFrames - 1);
-    const int   f0 = (int) framePos;
+    const auto  f0 = (int) framePos;
     const int   f1 = juce::jmin (f0 + 1, numFrames - 1);
     c.ff = framePos - (float) f0;
     c.r0 = base + (size_t) f0 * kFrameSize;

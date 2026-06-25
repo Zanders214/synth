@@ -29,7 +29,7 @@ public:
 
     // ---- User presets (disk) ----
     juce::File       getUserDir() const;
-    bool             saveUserPreset (const juce::String& name);
+    bool             saveUserPreset (const juce::String& name) const;
     juce::StringArray getUserPresetNames() const;
     bool             loadUserPreset (const juce::String& name);
 

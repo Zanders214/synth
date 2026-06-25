@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../Parameters.h"
+#include <array>
 #include <vector>
 #include <atomic>
 
@@ -29,7 +30,7 @@ public:
         reset();
     }
     static constexpr int kMaxSeq = 16 * 4 * 2 + 8;   // 16 notes * 4 octaves * up/dn
-    void prepareParams (juce::AudioProcessorValueTreeState& apvts);
+    void prepareParams (const juce::AudioProcessorValueTreeState& apvts);
     void reset() noexcept;
 
     // Rewrites `midi` in place; bpm/playing come from the host transport.
@@ -40,6 +41,7 @@ private:
 
     int  buildSequence (std::vector<int>& seqOut);   // returns count (uses scratch members)
     void allNotesOff (juce::MidiBuffer& out, int sample);
+    void emitStep (juce::MidiBuffer& out, int sampleOffset);   // fires one arp step
 
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }
     static float val (const std::atomic<float>* p) noexcept { return p != nullptr ? p->load() : 0.0f; }
@@ -59,6 +61,7 @@ private:
     int    stepIndex = -1;
     double samplesToNextStep = 0.0;
     double gateSamplesLeft = 0.0;
+    double swungLenCurrent = 0.0;   // length of the current step (for emitStep gate calc)
     bool   stepIsEven = true;
 
     // cached params
@@ -68,7 +71,7 @@ private:
     std::atomic<float> *pOct {};
     std::atomic<float> *pGate {};
     std::atomic<float> *pSwing {};
-    std::atomic<float> *pStep[16] {};
+    std::array<std::atomic<float>*, 16> pStep {};
 };
 
 } // namespace zw

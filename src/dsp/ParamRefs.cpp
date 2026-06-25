@@ -3,7 +3,7 @@
 namespace zw
 {
 
-static void prepOsc (OscRefs& r, juce::AudioProcessorValueTreeState& s, char ab)
+static void prepOsc (OscRefs& r, const juce::AudioProcessorValueTreeState& s, char ab)
 {
     r.enable    = s.getRawParameterValue (id::osc (ab, "enable"));
     r.wtpos     = s.getRawParameterValue (id::osc (ab, "wtpos"));
@@ -20,7 +20,7 @@ static void prepOsc (OscRefs& r, juce::AudioProcessorValueTreeState& s, char ab)
     r.uniwidth  = s.getRawParameterValue (id::osc (ab, "uniwidth"));
 }
 
-void ParamRefs::prepare (juce::AudioProcessorValueTreeState& s)
+void ParamRefs::prepare (const juce::AudioProcessorValueTreeState& s)
 {
     prepOsc (a, s, 'A');
     prepOsc (b, s, 'B');

@@ -4,6 +4,7 @@
 #include "../Parameters.h"
 #include "ModMatrix.h"
 #include <atomic>
+#include <array>
 
 namespace zw
 {
@@ -71,7 +72,7 @@ struct ParamRefs
     std::atomic<float> *env3D {};
     std::atomic<float> *env3S {};
     std::atomic<float> *env3R {};
-    std::atomic<float> *macro[4] {};
+    std::array<std::atomic<float>*, 4> macro {};
 
     struct LfoP
     {
@@ -84,12 +85,12 @@ struct ParamRefs
         std::atomic<float> *phase {};
         std::atomic<float> *mode {};
     };
-    LfoP lfo[4];
+    std::array<LfoP, 4> lfo {};
 
     // ---- Modulation destinations (base normalised value + range) -----------
-    juce::RangedAudioParameter* dest[kNumModDests] {};
+    std::array<juce::RangedAudioParameter*, kNumModDests> dest {};
 
-    void prepare (juce::AudioProcessorValueTreeState& s);
+    void prepare (const juce::AudioProcessorValueTreeState& s);
 
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }
 };

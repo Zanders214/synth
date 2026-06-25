@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782413003901,
+  "lastUpdate": 1782419617649,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -263,6 +263,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 223801.886,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9089f4be02c301bbc6f65d1fa381028556c30318",
+          "message": "Add DSP unit-test suite + wire SonarCloud coverage (#14)\n\n* Add DSP unit-test suite (juce::UnitTest) + wire SonarCloud coverage\n\nAdds tests/unit/ with a juce::UnitTest console target (unit_tests) covering the\nDSP/logic layer: Envelope, Lfo, MultimodeFilter, ModMatrix, Arpeggiator,\nWavetable + WavetableOscillator, BasicSources (sub/noise), Parameters,\nPresetManager, FxChain + Effects, and the Voice engine. ~907k assertions,\ndeterministic across runs.\n\nCoverage is measured in CI by OpenCppCoverage (SonarQube format) and imported\nvia sonar.coverageReportPaths. UI/visual code and the plugin/framework glue are\nexcluded from coverage scoring (covered by ui_snapshot + pluginval); the DSP\nlayer is what the suite covers.\n\n- CMake: unit_tests target (in ALL), built with /Zi + /DEBUG so coverage maps to source.\n- CI: the wrapped build already builds unit_tests; a new step runs it under\n  OpenCppCoverage (gating on tests passing) and emits coverage.xml before the scan.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n* ci: export Cobertura + convert to SonarQube generic for coverage\n\nThe choco OpenCppCoverage has no SonarQube export type (only html/cobertura/\nbinary), so the coverage step errored. Export Cobertura instead and convert it\nto SonarQube generic format with tools/cobertura_to_sonar.py (normalising paths\nto src/... and skipping JUCE). The OpenCppCoverage run still gates on the tests\npassing (&& chains the convert only on success).\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-06-25T23:30:25+03:00",
+          "tree_id": "4fdc8390685c78d4f4a104d8cce4aadd06750ab7",
+          "url": "https://github.com/Zanders214/synth/commit/9089f4be02c301bbc6f65d1fa381028556c30318"
+        },
+        "date": 1782419616851,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 415335.167,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.894,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 161965.443,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 246374.753,
             "unit": "ns/block"
           }
         ]

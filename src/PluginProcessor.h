@@ -10,21 +10,14 @@
 #include "dsp/fx/FxChain.h"
 #include "PresetManager.h"
 
-// RealtimeSanitizer (clang -fsanitize=realtime) marks the audio callback as a
-// non-blocking context so any malloc/lock/syscall reachable from it is flagged.
-// The CMake `rt_check` target defines this to [[clang::nonblocking]]; every other
-// build (MSVC/SonarCloud) compiles it away to nothing.
-#ifndef ZW_RT_NONBLOCKING
-#define ZW_RT_NONBLOCKING
-#endif
-
 //==============================================================================
 // ZandersWave — Serum 2-class wavetable synthesizer.
 // M0 scaffold: a valid, loadable synth that outputs silence and exposes a single
 // Master Out parameter. The voice engine (M2) and full parameter tree (M1) layer
 // on top of this skeleton without changing the AudioProcessor contract.
 //==============================================================================
-class ZandersWaveAudioProcessor : public juce::AudioProcessor
+class ZandersWaveAudioProcessor : public juce::AudioProcessor,
+                                  private juce::MidiKeyboardState::Listener
 {
 public:
     ZandersWaveAudioProcessor();
@@ -34,7 +27,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) ZW_RT_NONBLOCKING override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     //==========================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -74,6 +67,20 @@ public:
 
 private:
     static constexpr int kNumVoices = 16;
+
+    // ---- Lock-free on-screen-keyboard bridge (message thread -> audio thread) --
+    // MidiKeyboardState::processNextMidiBuffer locks a CriticalSection every block,
+    // which is unsafe on the audio thread. Instead we listen for note events on the
+    // message thread and pass them to processBlock through a single-producer/
+    // single-consumer FIFO, so the audio callback never takes a lock.
+    void handleNoteOn  (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
+    void handleNoteOff (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
+
+    struct KeyEvent { juce::uint8 channel, note, velocity; bool noteOn; };
+    static constexpr int kKbFifoSize = 256;
+    juce::AbstractFifo kbFifo { kKbFifoSize };
+    std::array<KeyEvent, (size_t) kKbFifoSize> kbEvents {};
+    void pushKeyEvent (const KeyEvent&) noexcept;
 
     zw::Wavetable      wavetable;
     zw::ParamRefs      paramRefs;

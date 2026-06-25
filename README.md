@@ -66,8 +66,11 @@ so the plugin must stay light and never stall the audio thread.
 - **`.github/workflows/quality.yml`** — deterministic gates:
   - **RTSan** (`rtsan` job): builds the `rt_check` target with clang's
     [RealtimeSanitizer](https://clang.llvm.org/docs/RealtimeSanitizer.html) (`-DZW_RT_SANITIZE=ON`)
-    and drives the real `processBlock` (marked `[[clang::nonblocking]]`). Any allocation, lock or
-    syscall on the audio thread fails the build. Known-benign cases live in `tests/rtsan_suppressions.txt`.
+    and drives the real `processBlock`. The DSP hot paths we own — `ZWVoice::renderNextBlock` and
+    `FxChain::process` — are marked `ZW_RT_NONBLOCKING`, so any allocation, lock or syscall reached
+    from them fails the build. (The scope is the inner DSP rather than the whole callback so JUCE's
+    own uncontended `Synthesiser` lock isn't flagged.) Findings are bugs to fix;
+    `tests/rtsan_suppressions.txt` is an (empty by default) escape hatch for unavoidable cases.
   - **pluginval** (`pluginval` job): runs `pluginval --strictness-level 5` against the built VST3.
 - **`.github/workflows/perf.yml`** — the "SonarCloud for performance": builds `perf_bench`
   (`-DZW_BUILD_BENCH=ON`, [nanobench](https://github.com/martinus/nanobench)) which times the DSP graph

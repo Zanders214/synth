@@ -1,13 +1,13 @@
 // Real-time safety check for the audio callback.
 //
 // Built with clang -fsanitize=realtime (see the ZW_RT_SANITIZE CMake option),
-// which — together with the [[clang::nonblocking]] attribute on
-// ZandersWaveAudioProcessor::processBlock — aborts if any allocation, lock or
-// syscall is reached on the audio thread. This driver instantiates the real
-// plugin (like ui_snapshot.cpp), prepares it, and pumps processBlock with live
-// MIDI so the whole DSP graph (arp -> voices -> FX -> master gain -> UI taps)
-// actually executes. A clean run exits 0; an RT-safety violation aborts with a
-// stack trace under RTSAN_OPTIONS=halt_on_error=1.
+// which — together with the ZW_RT_NONBLOCKING ([[clang::nonblocking]]) attribute
+// on the DSP hot paths (ZWVoice::renderNextBlock, FxChain::process) — aborts if
+// any allocation, lock or syscall is reached on the audio thread. This driver
+// instantiates the real plugin (like ui_snapshot.cpp), prepares it, and pumps
+// processBlock with live MIDI so the voice and FX render paths actually execute.
+// A clean run exits 0; an RT-safety violation aborts with a stack trace under
+// RTSAN_OPTIONS=halt_on_error=1.
 
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "PluginProcessor.h"

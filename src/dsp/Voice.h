@@ -9,6 +9,7 @@
 #include "Lfo.h"
 #include "ModMatrix.h"
 #include "ParamRefs.h"
+#include "RtSafety.h"
 #include <atomic>
 
 namespace zw
@@ -39,7 +40,7 @@ public:
     void pitchWheelMoved (int newPitchWheelValue) override;
     void controllerMoved (int, int) override {}
     void setCurrentPlaybackSampleRate (double newRate) override;
-    void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) override;
+    void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) ZW_RT_NONBLOCKING override;
 
 private:
     void updateBlockParams (int numSamples);

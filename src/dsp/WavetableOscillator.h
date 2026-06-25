@@ -44,6 +44,10 @@ public:
             inc[(size_t) i]    = freq / (float) sampleRate;
             freqHz[(size_t) i] = freq;
 
+            // Select mip + frames once per block; the per-sample loop just reads.
+            if (table != nullptr)
+                cursor[(size_t) i] = table->makeCursor (framePos, freq, sampleRate);
+
             const float vpan   = juce::jlimit (-1.0f, 1.0f, pan + width01 * spread);
             const float ang    = (vpan * 0.5f + 0.5f) * juce::MathConstants<float>::halfPi;
             gainL[(size_t) i]  = std::cos (ang);
@@ -62,7 +66,7 @@ public:
         for (int i = 0; i < count; ++i)
         {
             const float ph = warpPhase (phases[(size_t) i], warp);
-            const float s  = table->getSample (framePos, ph, freqHz[(size_t) i], sampleRate) * gain;
+            const float s  = cursor[(size_t) i].read (ph) * gain;
             outL += s * gainL[(size_t) i];
             outR += s * gainR[(size_t) i];
 
@@ -94,6 +98,7 @@ private:
     std::array<float, kMaxUnison> freqHz {};
     std::array<float, kMaxUnison> gainL {};
     std::array<float, kMaxUnison> gainR {};
+    std::array<Wavetable::Cursor, kMaxUnison> cursor {};
 };
 
 } // namespace zw

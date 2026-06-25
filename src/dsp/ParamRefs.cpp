@@ -20,7 +20,7 @@ static void prepOsc (OscRefs& r, const juce::AudioProcessorValueTreeState& s, ch
     r.uniwidth  = s.getRawParameterValue (id::osc (ab, "uniwidth"));
 }
 
-void ParamRefs::prepare (juce::AudioProcessorValueTreeState& s)
+void ParamRefs::prepare (const juce::AudioProcessorValueTreeState& s)
 {
     prepOsc (a, s, 'A');
     prepOsc (b, s, 'B');

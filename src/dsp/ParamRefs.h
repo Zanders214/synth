@@ -90,7 +90,7 @@ struct ParamRefs
     // ---- Modulation destinations (base normalised value + range) -----------
     std::array<juce::RangedAudioParameter*, kNumModDests> dest {};
 
-    void prepare (juce::AudioProcessorValueTreeState& s);
+    void prepare (const juce::AudioProcessorValueTreeState& s);
 
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }
 };

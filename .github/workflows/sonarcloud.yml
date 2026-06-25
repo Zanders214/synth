@@ -44,7 +44,7 @@ jobs:
         shell: cmd
         run: |
           choco install opencppcoverage -y --no-progress
-          "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe" --quiet --export_type SonarQube:coverage.xml --sources src --modules unit_tests -- build\unit_tests_artefacts\Release\unit_tests.exe
+          "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe" --quiet --export_type cobertura:cobertura.xml --sources src --excluded_sources _deps --modules unit_tests -- build\unit_tests_artefacts\Release\unit_tests.exe && python tools\cobertura_to_sonar.py cobertura.xml coverage.xml
 
       # Runs only when the SONAR_TOKEN secret is present, so the build stays green
       # until SonarCloud is fully wired up. Reads sonar-project.properties.

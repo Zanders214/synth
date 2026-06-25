@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include <cmath>
+#include "FastMath.h"
 
 namespace zw
 {
@@ -38,11 +39,11 @@ public:
             case Tri:    s = 4.0f * std::abs (phase - 0.5f) - 1.0f; break;
             case Square: s = (phase < 0.5f) ? 1.0f : -1.0f;        break;
             case Sine:
-            default:     s = std::sin (phase * juce::MathConstants<float>::twoPi); break;
+            default:     s = fastmath::sinTurns (phase); break;
         }
 
         if (sat > 1.0001f)
-            s = std::tanh (s * sat) * satComp;
+            s = fastmath::tanh (s * sat) * satComp;
 
         phase += inc;
         if (phase >= 1.0f) phase -= std::floor (phase);

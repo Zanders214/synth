@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../MultimodeFilter.h"
+#include "../FastMath.h"
 #include <cmath>
 
 namespace zw::fx
@@ -66,7 +67,7 @@ public:
             {
                 lfoPhase[v] += (0.15f + 0.05f * static_cast<float>(v) + det * 0.4f) / (float) sr;
                 if (lfoPhase[v] >= 1.0f) lfoPhase[v] -= 1.0f;
-                const float mod = std::sin (lfoPhase[v] * juce::MathConstants<float>::twoPi);
+                const float mod = fastmath::sinTurns (lfoPhase[v]);
                 const float dms = 8.0f + det * 12.0f + mod * (2.0f + det * 6.0f);   // ms
                 line[v].setDelay (juce::jmax (1.0f, (float) (dms * 0.001 * sr)));
                 line[v].pushSample (0, in);
@@ -139,9 +140,9 @@ private:
     {
         switch (mode)
         {
-            case 1: return x > 0.0f ? std::tanh (x) : 0.6f * std::tanh (x);   // diode (asym)
+            case 1: return x > 0.0f ? fastmath::tanh (x) : 0.6f * fastmath::tanh (x);   // diode (asym)
             case 2: { float y = x; while (y > 1.0f) y = 2.0f - y; while (y < -1.0f) y = -2.0f - y; return y; } // fold
-            default: return std::tanh (x);                                     // tube
+            default: return fastmath::tanh (x);                                // tube
         }
     }
     void applyTone (float toneAmt)
@@ -180,7 +181,7 @@ public:
         for (int i = 0; i < ns; ++i)
         {
             phase += rate / (float) sr; if (phase >= 1.0f) phase -= 1.0f;
-            const float mod = 0.5f + 0.5f * std::sin (phase * juce::MathConstants<float>::twoPi);
+            const float mod = 0.5f + 0.5f * fastmath::sinTurns (phase);
             const float dly = juce::jmax (1.0f, (float) ((0.5 + (0.5 + depth * 6.5) * mod) * 0.001 * sr));
             line.setDelay (dly);
             for (int c = 0; c < nc; ++c)

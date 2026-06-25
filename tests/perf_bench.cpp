@@ -131,7 +131,7 @@ int main (int argc, char** argv)
         masterGain.process (juce::dsp::ProcessContextReplacing<float> (block));
         ankerl::nanobench::doNotOptimizeAway (buffer.getReadPointer (0)[0]);
     });
-    const double fullNs = bench.results().back().median (ankerl::nanobench::Measure::elapsed) * 1.0e9;
+    const double fullNs = bench.results().back().median (ankerl::nanobench::Result::Measure::elapsed) * 1.0e9;
 
     // Tier 2 — voice render only.
     bench.run ("voice_render", [&] {
@@ -139,7 +139,7 @@ int main (int argc, char** argv)
         synth.renderNextBlock (buffer, empty, 0, bs);
         ankerl::nanobench::doNotOptimizeAway (buffer.getReadPointer (0)[0]);
     });
-    const double voiceNs = bench.results().back().median (ankerl::nanobench::Measure::elapsed) * 1.0e9;
+    const double voiceNs = bench.results().back().median (ankerl::nanobench::Result::Measure::elapsed) * 1.0e9;
 
     // Tier 3 — FX chain only, over a fixed pre-filled stereo block.
     juce::AudioBuffer<float> fxSource (2, bs);
@@ -153,7 +153,7 @@ int main (int argc, char** argv)
         fxChain.process (block);
         ankerl::nanobench::doNotOptimizeAway (buffer.getReadPointer (0)[0]);
     });
-    const double fxNs = bench.results().back().median (ankerl::nanobench::Measure::elapsed) * 1.0e9;
+    const double fxNs = bench.results().back().median (ankerl::nanobench::Result::Measure::elapsed) * 1.0e9;
 
     // ---- Emit github-action-benchmark "customSmallerIsBetter" JSON ----
     const double budgetNs = (double) bs / sr * 1.0e9;        // 10.67 ms at 48k/512

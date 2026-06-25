@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782380610855,
+  "lastUpdate": 1782385612366,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -43,6 +43,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 240374.586,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3dc87002a72e2071db17e2ca2f3718830eae184d",
+          "message": "docs: explain how to read the performance dashboard (#9)",
+          "timestamp": "2026-06-25T14:03:21+03:00",
+          "tree_id": "31a89021384652a95cc94005f2fb930170ffcce0",
+          "url": "https://github.com/Zanders214/synth/commit/3dc87002a72e2071db17e2ca2f3718830eae184d"
+        },
+        "date": 1782385611929,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 569795.735,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 5.342,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 322688.895,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 240328.93,
             "unit": "ns/block"
           }
         ]

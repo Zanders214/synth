@@ -59,8 +59,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
-          # Publish the trend dashboard only from main; PRs just compare + comment.
-          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          # Publish the trend dashboard from main and dev (the active branch); PRs
+          # just compare + comment without pushing.
+          auto-push: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' }}
           comment-on-alert: true
           fail-on-alert: true
           alert-threshold: '150%'

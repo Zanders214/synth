@@ -21,7 +21,7 @@ public:
         slider.setNumDecimalPlacesToDisplay (2);
         slider.setColour (juce::Slider::textBoxTextColourId, theme::t2);
         // Show the parameter's own formatted text (with units) in the value box.
-        if (auto* rp = s.getParameter (id))
+        if (const auto* rp = s.getParameter (id))
         {
             slider.textFromValueFunction = [rp] (double v)
             { return rp->getText (rp->getNormalisableRange().convertTo0to1 ((float) v), 0); };
@@ -31,7 +31,7 @@ public:
         if (arc != juce::Colour()) slider.setColour (juce::Slider::rotarySliderFillColourId, arc);
         slider.setLookAndFeel (&lf);
         slider.setTooltip (name);
-        if (auto* p = s.getParameter (id))
+        if (const auto* p = s.getParameter (id))
             slider.setDoubleClickReturnValue (true, p->getNormalisableRange().convertFrom0to1 (p->getDefaultValue()));
         addAndMakeVisible (slider);
 
@@ -281,7 +281,7 @@ public:
           cutoff->setBounds (row.removeFromLeft (kw)); reso->setBounds (row.removeFromLeft (kw));
           drive->setBounds (row.removeFromLeft (kw)); fmix->setBounds (row);
           b.removeFromTop (4); auto rr = b.removeFromTop (22); const int rw = rr.getWidth() / 4;
-          for (int i = 0; i < 4; ++i) route[i]->setBounds (rr.removeFromLeft (rw).reduced (2, 0)); }
+          for (auto* r2 : route) r2->setBounds (rr.removeFromLeft (rw).reduced (2, 0)); }
         right.removeFromTop (12);
         outMod.setBounds (right);
         { auto b = outMod.body(); scope.setBounds (b.removeFromTop (70)); b.removeFromTop (6);
@@ -306,7 +306,7 @@ public:
         auto footer = r.reduced (16, 6);
         macroMod.setBounds (footer.removeFromLeft (300));
         { auto b = macroMod.body(); const int kw = b.getWidth() / 4;
-          for (int i = 0; i < 4; ++i) macro[i]->setBounds (b.removeFromLeft (kw)); }
+          for (auto* m : macro) m->setBounds (b.removeFromLeft (kw)); }
         footer.removeFromLeft (12);
         keyboard.setBounds (footer);
     }
@@ -426,14 +426,14 @@ private:
         // FX toggles row
         if (fxPageComp != nullptr)
         { auto b = fxPageComp->getLocalBounds(); const int w = b.getWidth() / 10;
-          for (int i = 0; i < 10; ++i) fxToggles[i]->setBounds (b.removeFromLeft (w).reduced (3, 30)); }
+          for (auto* t : fxToggles) t->setBounds (b.removeFromLeft (w).reduced (3, 30)); }
         if (arpPageComp != nullptr)
         { auto b = arpPageComp->getLocalBounds(); auto top = b.removeFromTop (24);
           arpRun->setBounds (top.removeFromLeft (70)); top.removeFromLeft (8);
           arpRate->setBounds (top.removeFromLeft (110)); top.removeFromLeft (8);
           arpMode->setBounds (top.removeFromLeft (130));
           b.removeFromTop (10); auto grid = b.removeFromTop (60); const int sw = grid.getWidth() / 16;
-          for (int i = 0; i < 16; ++i) arpStep[i]->setBounds (grid.removeFromLeft (sw).reduced (2)); }
+          for (auto* st : arpStep) st->setBounds (grid.removeFromLeft (sw).reduced (2)); }
         if (wtPageComp != nullptr)
             wtFrame->setBounds (wtPageComp->getLocalBounds().removeFromTop (60));
         juce::ignoreUnused (area);
@@ -455,7 +455,14 @@ private:
     ZandersWaveAudioProcessor& proc;
     ZWLookAndFeel& lnf;
 
-    Module envMod, lfoMod, oscMod, mixMod, filtMod, outMod, macroMod, lowerMod;
+    Module envMod;
+    Module lfoMod;
+    Module oscMod;
+    Module mixMod;
+    Module filtMod;
+    Module outMod;
+    Module macroMod;
+    Module lowerMod;
     WavetableDisplay wtDisplay;
     FilterResponse filtResp;
     AdsrDisplay adsr;
@@ -471,14 +478,43 @@ private:
     juce::OwnedArray<juce::Component> tabPages;
     juce::OwnedArray<juce::TextButton> tabBtn;
 
-    LabeledKnob *envA{}, *envD{}, *envS{}, *envR{}, *lfoRate{}, *lfoDepth{}, *lfoRise{};
-    LabeledKnob *oscWt{}, *oscWarp{}, *oscUni{}, *oscDet{}, *oscLvl{}, *oscPan{};
-    LabeledKnob *mixLvl[4]{}, *cutoff{}, *reso{}, *drive{}, *fmix{}, *master{}, *macro[4]{}, *wtFrame{};
-    juce::TextButton *mixEn[4]{}, *filterEnable{}, *route[4]{}, *arpRun{}, *arpStep[16]{}, *fxToggles[10]{};
-    juce::ComboBox *filterType{}, *arpRate{}, *arpMode{};
-    juce::Component *fxPageComp{}, *arpPageComp{}, *wtPageComp{}, *matrixPage{};
+    LabeledKnob* envA{};
+    LabeledKnob* envD{};
+    LabeledKnob* envS{};
+    LabeledKnob* envR{};
+    LabeledKnob* lfoRate{};
+    LabeledKnob* lfoDepth{};
+    LabeledKnob* lfoRise{};
+    LabeledKnob* oscWt{};
+    LabeledKnob* oscWarp{};
+    LabeledKnob* oscUni{};
+    LabeledKnob* oscDet{};
+    LabeledKnob* oscLvl{};
+    LabeledKnob* oscPan{};
+    LabeledKnob* mixLvl[4]{};
+    LabeledKnob* cutoff{};
+    LabeledKnob* reso{};
+    LabeledKnob* drive{};
+    LabeledKnob* fmix{};
+    LabeledKnob* master{};
+    LabeledKnob* macro[4]{};
+    LabeledKnob* wtFrame{};
+    juce::TextButton* mixEn[4]{};
+    juce::TextButton* filterEnable{};
+    juce::TextButton* route[4]{};
+    juce::TextButton* arpRun{};
+    juce::TextButton* arpStep[16]{};
+    juce::TextButton* fxToggles[10]{};
+    juce::ComboBox* filterType{};
+    juce::ComboBox* arpRate{};
+    juce::ComboBox* arpMode{};
+    juce::Component* fxPageComp{};
+    juce::Component* arpPageComp{};
+    juce::Component* wtPageComp{};
+    juce::Component* matrixPage{};
 
-    juce::TextButton prevBtn, nextBtn;
+    juce::TextButton prevBtn;
+    juce::TextButton nextBtn;
     juce::TooltipWindow tooltip { this, 600 };
     juce::String presetName { "Init" };
     int modBarY = 620;

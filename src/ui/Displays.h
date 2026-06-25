@@ -53,9 +53,9 @@ public:
         for (int k = 0; k < K; ++k)
         {
             const float d = (float) k / (K - 1);
-            const float ox = (k - cur) * 7.0f;
-            const float oy = (cur - k) * 8.2f + std::sin (phase + (float) k * 0.3f) * 1.5f;
-            const float opacity = juce::jmax (0.10f, 0.55f - std::abs (k - cur) * 0.045f);
+            const float ox = static_cast<float> (k - cur) * 7.0f;
+            const float oy = static_cast<float> (cur - k) * 8.2f + std::sin (phase + (float) k * 0.3f) * 1.5f;
+            const float opacity = juce::jmax (0.10f, 0.55f - static_cast<float> (std::abs (k - cur)) * 0.045f);
             const bool  isCur = (k == cur);
 
             juce::Path path;
@@ -67,7 +67,7 @@ public:
                     ph = (x < piv) ? (0.5f * x / piv) : (0.5f + 0.5f * (x - piv) / (1.0f - piv)); }
                 const int H = 1 + (int) (d * 16);
                 float y = 0.0f;
-                for (int n = 1; n <= H; ++n) y += (1.0f / n) * std::sin (juce::MathConstants<float>::twoPi * n * ph);
+                for (int n = 1; n <= H; ++n) y += (1.0f / static_cast<float> (n)) * std::sin (juce::MathConstants<float>::twoPi * static_cast<float> (n) * ph);
                 y *= 0.5f;
                 const float px = area.getX() + ox + x * area.getWidth() * 0.82f;
                 const float py = area.getCentreY() + oy - y * area.getHeight() * 0.22f;
@@ -80,7 +80,8 @@ public:
     }
 
 private:
-    std::atomic<float> *wt = nullptr, *warp = nullptr;
+    std::atomic<float> *wt = nullptr;
+    std::atomic<float> *warp = nullptr;
 };
 
 //==============================================================================
@@ -101,7 +102,7 @@ public:
         auto a = r.reduced (10.0f);
 
         g.setColour (theme::wa (0.05f));
-        for (int i = 1; i < 6; ++i) { const float x = a.getX() + a.getWidth() * i / 6.0f; g.drawVerticalLine ((int) x, a.getY(), a.getBottom()); }
+        for (int i = 1; i < 6; ++i) { const float x = a.getX() + a.getWidth() * static_cast<float> (i) / 6.0f; g.drawVerticalLine ((int) x, a.getY(), a.getBottom()); }
 
         const float fc   = cut != nullptr ? cut->load() : 2000.0f;
         const float reso = res != nullptr ? res->load() : 0.26f;
@@ -136,7 +137,9 @@ public:
     }
 
 private:
-    std::atomic<float> *cut = nullptr, *res = nullptr, *type = nullptr;
+    std::atomic<float> *cut = nullptr;
+    std::atomic<float> *res = nullptr;
+    std::atomic<float> *type = nullptr;
 };
 
 //==============================================================================
@@ -158,10 +161,13 @@ public:
         auto bx = r.reduced (10.0f);
 
         auto norm = [] (std::atomic<float>* p, float dflt) { return p ? juce::jlimit (0.0f, 1.0f, p->load() / 8.0f) : dflt; };
-        const float an = norm (a, 0.02f), dn = norm (d, 0.05f), rn = norm (rel, 0.08f);
+        const float an = norm (a, 0.02f);
+        const float dn = norm (d, 0.05f);
+        const float rn = norm (rel, 0.08f);
         const float sn = sus ? sus->load() : 0.7f;
 
-        const float yTop = bx.getY(), yBot = bx.getBottom();
+        const float yTop = bx.getY();
+        const float yBot = bx.getBottom();
         const float x0 = bx.getX();
         const float ax = x0 + an * bx.getWidth() * 0.3f;
         const float dx = ax + dn * bx.getWidth() * 0.3f;
@@ -185,7 +191,10 @@ public:
     }
 
 private:
-    std::atomic<float> *a = nullptr, *d = nullptr, *sus = nullptr, *rel = nullptr;
+    std::atomic<float> *a = nullptr;
+    std::atomic<float> *d = nullptr;
+    std::atomic<float> *sus = nullptr;
+    std::atomic<float> *rel = nullptr;
 };
 
 //==============================================================================

@@ -48,9 +48,9 @@ public:
             phase -= std::floor (phase);
             if (shape == Random) sh = rng.nextFloat() * 2.0f - 1.0f;   // S&H per cycle
         }
-        else if (std::floor (before) != std::floor (phase))
+        else if (std::floor (before) != std::floor (phase) && shape == Random)
         {
-            if (shape == Random) sh = rng.nextFloat() * 2.0f - 1.0f;
+            sh = rng.nextFloat() * 2.0f - 1.0f;
         }
 
         float riseGain = 1.0f;
@@ -80,9 +80,15 @@ private:
 
     juce::Random rng;
     double sampleRate = 44100.0;
-    double phase = 0.0, risePos = 0.0;
-    int    shape = Sine, mode = Trigger;
-    float  freq = 1.0f, depth = 1.0f, riseTime = 0.0f, startPhase = 0.0f, sh = 0.0f;
+    double phase = 0.0;
+    double risePos = 0.0;
+    int    shape = Sine;
+    int    mode = Trigger;
+    float  freq = 1.0f;
+    float  depth = 1.0f;
+    float  riseTime = 0.0f;
+    float  startPhase = 0.0f;
+    float  sh = 0.0f;
 };
 
 } // namespace zw

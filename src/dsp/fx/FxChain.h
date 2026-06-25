@@ -36,8 +36,25 @@ private:
     fx::Eq       eq;
     fx::FilterFx filterFx;
 
-    struct P { std::atomic<float> *enable {}, *p1 {}, *p2 {}, *p3 {}, *p4 {}, *p5 {}; };
-    P hy, di, fl, ph, ch, dl, rv, cp, eqp, fi;
+    struct P
+    {
+        std::atomic<float>* enable {};
+        std::atomic<float>* p1 {};
+        std::atomic<float>* p2 {};
+        std::atomic<float>* p3 {};
+        std::atomic<float>* p4 {};
+        std::atomic<float>* p5 {};
+    };
+    P hy;
+    P di;
+    P fl;
+    P ph;
+    P ch;
+    P dl;
+    P rv;
+    P cp;
+    P eqp;
+    P fi;
 };
 
 } // namespace zw

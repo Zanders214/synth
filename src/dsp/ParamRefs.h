@@ -15,31 +15,74 @@ namespace zw
 //==============================================================================
 struct OscRefs
 {
-    std::atomic<float> *enable {}, *wtpos {}, *warp {}, *unison {}, *detune {},
-                       *level {}, *pan {}, *octave {}, *coarse {}, *fine {},
-                       *phase {}, *phaserand {}, *uniwidth {};
+    std::atomic<float> *enable {};
+    std::atomic<float> *wtpos {};
+    std::atomic<float> *warp {};
+    std::atomic<float> *unison {};
+    std::atomic<float> *detune {};
+    std::atomic<float> *level {};
+    std::atomic<float> *pan {};
+    std::atomic<float> *octave {};
+    std::atomic<float> *coarse {};
+    std::atomic<float> *fine {};
+    std::atomic<float> *phase {};
+    std::atomic<float> *phaserand {};
+    std::atomic<float> *uniwidth {};
 };
 
 struct ParamRefs
 {
-    OscRefs a, b;
+    OscRefs a;
+    OscRefs b;
 
-    std::atomic<float> *subEnable {}, *subWave {}, *subOctave {}, *subSat {}, *subLevel {};
-    std::atomic<float> *noiseEnable {}, *noiseType {}, *noiseColor {}, *noiseLevel {};
-    std::atomic<float> *filterEnable {}, *filterType {}, *cutoff {}, *reso {}, *drive {},
-                       *fmix {}, *routeA {}, *routeB {}, *routeS {}, *routeN {};
-    std::atomic<float> *env1A {}, *env1D {}, *env1S {}, *env1R {};
-    std::atomic<float> *masterOut {}, *bendRange {}, *glideTime {};
+    std::atomic<float> *subEnable {};
+    std::atomic<float> *subWave {};
+    std::atomic<float> *subOctave {};
+    std::atomic<float> *subSat {};
+    std::atomic<float> *subLevel {};
+    std::atomic<float> *noiseEnable {};
+    std::atomic<float> *noiseType {};
+    std::atomic<float> *noiseColor {};
+    std::atomic<float> *noiseLevel {};
+    std::atomic<float> *filterEnable {};
+    std::atomic<float> *filterType {};
+    std::atomic<float> *cutoff {};
+    std::atomic<float> *reso {};
+    std::atomic<float> *drive {};
+    std::atomic<float> *fmix {};
+    std::atomic<float> *routeA {};
+    std::atomic<float> *routeB {};
+    std::atomic<float> *routeS {};
+    std::atomic<float> *routeN {};
+    std::atomic<float> *env1A {};
+    std::atomic<float> *env1D {};
+    std::atomic<float> *env1S {};
+    std::atomic<float> *env1R {};
+    std::atomic<float> *masterOut {};
+    std::atomic<float> *bendRange {};
+    std::atomic<float> *glideTime {};
 
     // ---- Modulation sources -------------------------------------------------
-    std::atomic<float> *env2A {}, *env2D {}, *env2S {}, *env2R {};
-    std::atomic<float> *env3A {}, *env3D {}, *env3S {}, *env3R {};
+    std::atomic<float> *env2A {};
+    std::atomic<float> *env2D {};
+    std::atomic<float> *env2S {};
+    std::atomic<float> *env2R {};
+    std::atomic<float> *env3A {};
+    std::atomic<float> *env3D {};
+    std::atomic<float> *env3S {};
+    std::atomic<float> *env3R {};
     std::atomic<float> *macro[4] {};
 
     struct LfoP
     {
-        std::atomic<float> *shape {}, *sync {}, *ratehz {}, *ratediv {},
-                           *depth {}, *rise {}, *phase {}, *mode {};
+        std::atomic<float> *shape {};
+        std::atomic<float> *sync {};
+        std::atomic<float> *ratehz {};
+        std::atomic<float> *ratediv {};
+        std::atomic<float> *depth {};
+        std::atomic<float> *rise {};
+        std::atomic<float> *phase {};
+        std::atomic<float> *mode {};
     };
     LfoP lfo[4];
 

@@ -50,8 +50,10 @@ private:
     std::vector<int>  activeNotes;   // notes the arp is currently sounding
 
     // Pre-allocated scratch reused every block (no audio-thread allocation).
-    juce::MidiBuffer  passthroughBuf, outBuf;
-    std::vector<int>  seqScratch, baseScratch;
+    juce::MidiBuffer  passthroughBuf;
+    juce::MidiBuffer  outBuf;
+    std::vector<int>  seqScratch;
+    std::vector<int>  baseScratch;
 
     int    seqIndex = 0;
     int    stepIndex = -1;
@@ -60,7 +62,12 @@ private:
     bool   stepIsEven = true;
 
     // cached params
-    std::atomic<float> *pEnable {}, *pRate {}, *pMode {}, *pOct {}, *pGate {}, *pSwing {};
+    std::atomic<float> *pEnable {};
+    std::atomic<float> *pRate {};
+    std::atomic<float> *pMode {};
+    std::atomic<float> *pOct {};
+    std::atomic<float> *pGate {};
+    std::atomic<float> *pSwing {};
     std::atomic<float> *pStep[16] {};
 };
 

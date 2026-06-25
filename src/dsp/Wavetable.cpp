@@ -35,7 +35,7 @@ void Wavetable::generateBasicShapes (int frames)
         const float harmLimit = 1.0f + t * (float) (maxHarmonic - 1);
 
         // Target saw-ish spectrum a[n] = (1/n) tapered to the per-frame harmonic limit.
-        auto amp = [&] (int n) -> float
+        auto amp = [&] (int n)
         {
             const float edge = juce::jlimit (0.0f, 1.0f, harmLimit - (float) n + 1.0f);
             return (1.0f / (float) n) * edge;

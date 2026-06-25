@@ -52,7 +52,11 @@ public:
 private:
     double sampleRate = 44100.0;
     int    wave = Sine;
-    float  phase = 0.0f, inc = 0.0f, gain = 0.0f, sat = 1.0f, satComp = 1.0f;
+    float  phase = 0.0f;
+    float  inc = 0.0f;
+    float  gain = 0.0f;
+    float  sat = 1.0f;
+    float  satComp = 1.0f;
 };
 
 //==============================================================================
@@ -117,8 +121,10 @@ private:
 
     juce::Random rng;
     int   type = White;
-    float color = 0.4f, gain = 0.0f;
-    float lp = 0.0f, crackle = 0.0f;
+    float color = 0.4f;
+    float gain = 0.0f;
+    float lp = 0.0f;
+    float crackle = 0.0f;
     float pinkState[7] = { 0,0,0,0,0,0,0 };
 };
 

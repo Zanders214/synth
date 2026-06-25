@@ -38,7 +38,7 @@ public:
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int currentPitchWheelPosition) override;
     void stopNote (float velocity, bool allowTailOff) override;
     void pitchWheelMoved (int newPitchWheelValue) override;
-    void controllerMoved (int, int) override {}
+    void controllerMoved (int, int) override { /* No MIDI CC handling: modulation is driven by the mod matrix. */ }
     void setCurrentPlaybackSampleRate (double newRate) override;
     void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) ZW_RT_NONBLOCKING override;
 
@@ -49,7 +49,11 @@ private:
     {
         return octave * 12.0f + coarse + fineCents * 0.01f;
     }
-    static float clamp01 (float x) noexcept { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
+    static float clamp01 (float x) noexcept
+    {
+        const float upper = x > 1.0f ? 1.0f : x;
+        return x < 0.0f ? 0.0f : upper;
+    }
 
     const ParamRefs& p;
     const Wavetable& table;
@@ -57,21 +61,33 @@ private:
     const std::atomic<double>& bpmRef;
     std::atomic<double>& lastNoteFreqRef;
 
-    WavetableOscillator oscA, oscB;
+    WavetableOscillator oscA;
+    WavetableOscillator oscB;
     SubOscillator       sub;
     NoiseOscillator     noise;
     MultimodeFilter     filter;
-    Envelope            ampEnv, env2, env3;
+    Envelope            ampEnv;
+    Envelope            env2;
+    Envelope            env3;
     Lfo                 lfo[4];
 
     double noteFreq = 440.0;     // gliding (sounding) frequency
     double targetFreq = 440.0;   // destination pitch
-    float  velocity = 1.0f, rawVelocity = 1.0f, noteNorm = 0.0f;
+    float  velocity = 1.0f;
+    float  rawVelocity = 1.0f;
+    float  noteNorm = 0.0f;
     float  pitchBendSemis = 0.0f;
     int    midiNote = 60;
 
-    bool   aOn = true, bOn = true, subOn = true, noiseOn = false;
-    bool   filterOn = true, rA = true, rB = true, rS = false, rN = false;
+    bool   aOn = true;
+    bool   bOn = true;
+    bool   subOn = true;
+    bool   noiseOn = false;
+    bool   filterOn = true;
+    bool   rA = true;
+    bool   rB = true;
+    bool   rS = false;
+    bool   rN = false;
     float  filterMix = 1.0f;
 };
 

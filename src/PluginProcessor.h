@@ -46,7 +46,7 @@ public:
     void setCurrentProgram (int index) override
     { index = juce::jlimit (0, juce::jmax (0, getNumPrograms() - 1), index); currentProgram = index; presets.applyFactory (index); }
     const juce::String getProgramName (int index) override { return presets.factoryName (index); }
-    void changeProgramName (int, const juce::String&) override {}
+    void changeProgramName (int, const juce::String&) override { /* no-op: factory presets are read-only */ }
 
     zw::PresetManager& getPresetManager() { return presets; }
 
@@ -76,7 +76,7 @@ private:
     void handleNoteOn  (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
     void handleNoteOff (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
 
-    struct KeyEvent { juce::uint8 channel, note, velocity; bool noteOn; };
+    struct KeyEvent { juce::uint8 channel; juce::uint8 note; juce::uint8 velocity; bool noteOn; };
     static constexpr int kKbFifoSize = 256;
     juce::AbstractFifo kbFifo { kKbFifoSize };
     std::array<KeyEvent, (size_t) kKbFifoSize> kbEvents {};

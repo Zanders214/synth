@@ -86,7 +86,9 @@ private:
     juce::Random rng;
 
     int   count = 1;
-    float framePos = 0.0f, warp = 0.0f, gain = 0.0f;
+    float framePos = 0.0f;
+    float warp = 0.0f;
+    float gain = 0.0f;
     std::array<float, kMaxUnison> phases {};
     std::array<float, kMaxUnison> inc {};
     std::array<float, kMaxUnison> freqHz {};

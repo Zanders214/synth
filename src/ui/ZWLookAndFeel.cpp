@@ -84,7 +84,8 @@ void ZWLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, in
 
     // White indicator tick.
     juce::Path tick;
-    const float ti = r * 0.42f, to = r * 0.82f;
+    const float ti = r * 0.42f;
+    const float to = r * 0.82f;
     tick.startNewSubPath (c.x + std::cos (ang - juce::MathConstants<float>::halfPi) * ti,
                           c.y + std::sin (ang - juce::MathConstants<float>::halfPi) * ti);
     tick.lineTo (c.x + std::cos (ang - juce::MathConstants<float>::halfPi) * to,

@@ -64,7 +64,7 @@ namespace
     juce::NormalisableRange<float> pan()        { return { -1.0f, 1.0f, 0.0001f }; }
     juce::NormalisableRange<float> deg()        { return { 0.0f, 360.0f, 0.1f }; }
 
-    struct OscDefaults { bool en; float wt, warp; int uni; float det, lvl, pan; int oct; };
+    struct OscDefaults { bool en; float wt; float warp; int uni; float det; float lvl; float pan; int oct; };
 
     void addOsc (Layout& l, char ab, const OscDefaults& d)
     {
@@ -87,7 +87,7 @@ namespace
         addF      (l, id::osc (ab, "fine"),      name + "Fine",      { -100.0f, 100.0f, 0.01f }, 0.0f, "ct");
     }
 
-    struct AdsrDefaults { float a, d, s, r; };
+    struct AdsrDefaults { float a; float d; float s; float r; };
 
     void addEnv (Layout& l, int n, const AdsrDefaults& d)
     {

@@ -36,6 +36,16 @@ jobs:
       - name: Build (wrapped)
         run: build-wrapper-win-x86-64 --out-dir bw-output cmake --build build --parallel
 
+      # Runs the DSP unit-test suite under OpenCppCoverage: this both gates the
+      # build on the tests passing (OpenCppCoverage returns the test exit code)
+      # and emits SonarQube-format line coverage for the scan to import. The
+      # unit_tests target is built with /Zi + /DEBUG so coverage maps to source.
+      - name: DSP unit tests + coverage
+        shell: cmd
+        run: |
+          choco install opencppcoverage -y --no-progress
+          "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe" --quiet --export_type SonarQube:coverage.xml --sources src --modules unit_tests -- build\unit_tests_artefacts\Release\unit_tests.exe
+
       # Runs only when the SONAR_TOKEN secret is present, so the build stays green
       # until SonarCloud is fully wired up. Reads sonar-project.properties.
       - name: SonarQube Cloud scan

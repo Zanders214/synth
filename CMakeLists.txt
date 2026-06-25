@@ -132,6 +132,38 @@ target_link_libraries(ui_snapshot PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 
+# ---- DSP unit tests (juce::UnitTest) ---------------------------------------
+# Console app that registers every tests/unit/*Tests.cpp and runs them. Compiles
+# the DSP/logic sources directly (same pattern as render_smoke) so the engine is
+# tested without the plugin/UI wrapper. Built with debug info (/Zi + /DEBUG) so
+# OpenCppCoverage can map line coverage back to source in CI.
+file(GLOB ZW_UNIT_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/*.cpp)
+juce_add_console_app(unit_tests PRODUCT_NAME "unit_tests")
+juce_generate_juce_header(unit_tests)
+target_sources(unit_tests PRIVATE
+    ${ZW_UNIT_TESTS}
+    src/Parameters.cpp
+    src/PresetManager.cpp
+    src/dsp/Wavetable.cpp
+    src/dsp/ParamRefs.cpp
+    src/dsp/ModMatrix.cpp
+    src/dsp/Arpeggiator.cpp
+    src/dsp/Voice.cpp
+    src/dsp/fx/FxChain.cpp)
+target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(unit_tests PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+if(MSVC)
+    target_compile_options(unit_tests PRIVATE /Zi)
+    target_link_options   (unit_tests PRIVATE /DEBUG)
+endif()
+target_link_libraries(unit_tests PRIVATE
+    juce::juce_audio_utils
+    juce::juce_audio_processors
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+
 # ---- Performance monitoring: RTSan + benchmark harnesses -------------------
 # Two opt-in dev/CI targets (see .github/workflows/quality.yml and perf.yml).
 # Both are EXCLUDE_FROM_ALL so the default and SonarCloud builds stay lean.

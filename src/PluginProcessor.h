@@ -16,7 +16,8 @@
 // Master Out parameter. The voice engine (M2) and full parameter tree (M1) layer
 // on top of this skeleton without changing the AudioProcessor contract.
 //==============================================================================
-class ZandersWaveAudioProcessor : public juce::AudioProcessor
+class ZandersWaveAudioProcessor : public juce::AudioProcessor,
+                                  private juce::MidiKeyboardState::Listener
 {
 public:
     ZandersWaveAudioProcessor();
@@ -66,6 +67,20 @@ public:
 
 private:
     static constexpr int kNumVoices = 16;
+
+    // ---- Lock-free on-screen-keyboard bridge (message thread -> audio thread) --
+    // MidiKeyboardState::processNextMidiBuffer locks a CriticalSection every block,
+    // which is unsafe on the audio thread. Instead we listen for note events on the
+    // message thread and pass them to processBlock through a single-producer/
+    // single-consumer FIFO, so the audio callback never takes a lock.
+    void handleNoteOn  (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
+    void handleNoteOff (juce::MidiKeyboardState*, int midiChannel, int midiNote, float velocity) override;
+
+    struct KeyEvent { juce::uint8 channel, note, velocity; bool noteOn; };
+    static constexpr int kKbFifoSize = 256;
+    juce::AbstractFifo kbFifo { kKbFifoSize };
+    std::array<KeyEvent, (size_t) kKbFifoSize> kbEvents {};
+    void pushKeyEvent (const KeyEvent&) noexcept;
 
     zw::Wavetable      wavetable;
     zw::ParamRefs      paramRefs;

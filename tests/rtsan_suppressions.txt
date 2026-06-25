@@ -1,0 +1,11 @@
+# RealtimeSanitizer suppressions for rt_check (RTSAN_OPTIONS=suppressions=...).
+#
+# Currently EMPTY by design: the audio thread is expected to be fully RT-safe, so
+# any RTSan finding is a real bug to FIX, not to hide. (The on-screen-keyboard
+# CriticalSection that used to live in processBlock was removed in favour of a
+# lock-free FIFO; see PluginProcessor's keyboard bridge.)
+#
+# Only add an entry for a genuinely unavoidable, understood third-party call, with
+# a comment explaining why. Format (clang RealtimeSanitizer):
+#   call-stack-contains:<pattern>     # suppress if the stack matches (supports *)
+#   function-name-matches:<pattern>   # suppress a specific function (supports *)

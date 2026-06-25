@@ -98,11 +98,14 @@ public:
         os.initProcessing (s.maximumBlockSize);
         juce::dsp::ProcessSpec ms { s.sampleRate, s.maximumBlockSize, s.numChannels };
         tone.prepare (ms); tone.reset();
+        lastTone = 0.5f; applyTone (lastTone);   // prime coefficients off the audio thread
     }
     void reset() { os.reset(); tone.reset(); }
     void setParams (float drive_, float toneAmt, float mix_, float out_, int mode_)
     { drive = drive_; mix = mix_; outGain = out_; mode = mode_;
-      *tone.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (sr, 2500.0, 0.707, juce::Decibels::decibelsToGain ((toneAmt - 0.5f) * 18.0f)); }
+      // Recompute the tone shelf only when it actually changes: each make*() call
+      // heap-allocates, which is unsafe on the audio thread (caught by RTSan).
+      if (toneAmt != lastTone) { lastTone = toneAmt; applyTone (toneAmt); } }
 
     void process (juce::dsp::AudioBlock<float>& block)
     {
@@ -135,7 +138,11 @@ private:
             default: return std::tanh (x);                                     // tube
         }
     }
+    void applyTone (float toneAmt)
+    { *tone.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (sr, 2500.0, 0.707, juce::Decibels::decibelsToGain ((toneAmt - 0.5f) * 18.0f)); }
+
     double sr = 44100.0; int mode = 0; float drive = 0.3f, mix = 1.0f, outGain = 0.8f;
+    float lastTone = 0.5f;
     juce::dsp::Oversampling<float> os;
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> tone;
     DryStore dry;
@@ -297,20 +304,30 @@ public:
     {
         sr = s.sampleRate;
         chain.prepare (s);
+        lastLow = lastLoMid = lastHiMid = lastHigh = 0.0f;   // prime all bands flat,
+        applyLow (0.0f); applyLoMid (0.0f); applyHiMid (0.0f); applyHigh (0.0f);  // off the audio thread
     }
     void reset() { chain.reset(); }
     void setParams (float lowDb, float loMidDb, float hiMidDb, float highDb)
     {
-        using Coef = juce::dsp::IIR::Coefficients<float>;
-        *chain.get<0>().state = *Coef::makeLowShelf  (sr, 120.0,  0.707, juce::Decibels::decibelsToGain (lowDb));
-        *chain.get<1>().state = *Coef::makePeakFilter (sr, 500.0,  0.9,   juce::Decibels::decibelsToGain (loMidDb));
-        *chain.get<2>().state = *Coef::makePeakFilter (sr, 3000.0, 0.9,   juce::Decibels::decibelsToGain (hiMidDb));
-        *chain.get<3>().state = *Coef::makeHighShelf  (sr, 8000.0, 0.707, juce::Decibels::decibelsToGain (highDb));
+        // Recompute a band only when its gain changes: each make*() call heap-allocates,
+        // which is unsafe on the audio thread (caught by RTSan).
+        if (lowDb   != lastLow)   { lastLow   = lowDb;   applyLow   (lowDb); }
+        if (loMidDb != lastLoMid) { lastLoMid = loMidDb; applyLoMid (loMidDb); }
+        if (hiMidDb != lastHiMid) { lastHiMid = hiMidDb; applyHiMid (hiMidDb); }
+        if (highDb  != lastHigh)  { lastHigh  = highDb;  applyHigh  (highDb); }
     }
     void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing<float> c (block); chain.process (c); }
 private:
+    using Coef = juce::dsp::IIR::Coefficients<float>;
+    void applyLow   (float dB) { *chain.get<0>().state = *Coef::makeLowShelf   (sr, 120.0,  0.707, juce::Decibels::decibelsToGain (dB)); }
+    void applyLoMid (float dB) { *chain.get<1>().state = *Coef::makePeakFilter (sr, 500.0,  0.9,   juce::Decibels::decibelsToGain (dB)); }
+    void applyHiMid (float dB) { *chain.get<2>().state = *Coef::makePeakFilter (sr, 3000.0, 0.9,   juce::Decibels::decibelsToGain (dB)); }
+    void applyHigh  (float dB) { *chain.get<3>().state = *Coef::makeHighShelf  (sr, 8000.0, 0.707, juce::Decibels::decibelsToGain (dB)); }
+
     using Dup = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     double sr = 44100.0;
+    float lastLow = 0.0f, lastLoMid = 0.0f, lastHiMid = 0.0f, lastHigh = 0.0f;
     juce::dsp::ProcessorChain<Dup, Dup, Dup, Dup> chain;
 };
 

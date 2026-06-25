@@ -16,9 +16,15 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < kNumVoices; ++i)
         synth.addVoice (new zw::ZWVoice (paramRefs, wavetable, modMatrix, currentBpm, lastNoteFreq));
+
+    // Collect on-screen-keyboard notes on the message thread (see processBlock).
+    keyboardState.addListener (this);
 }
 
-ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor() = default;
+ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor()
+{
+    keyboardState.removeListener (this);
+}
 
 //==============================================================================
 void ZandersWaveAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -62,8 +68,22 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);
 
-    // Merge on-screen keyboard input into the MIDI stream.
-    keyboardState.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
+    // Merge on-screen keyboard input (collected on the message thread) without
+    // locking: drain the SPSC FIFO into the MIDI stream at the block start.
+    {
+        const auto rd = kbFifo.read (kbFifo.getNumReady());
+        auto emit = [this, &midi] (int start, int size)
+        {
+            for (int i = 0; i < size; ++i)
+            {
+                const auto& e = kbEvents[(size_t) (start + i)];
+                midi.addEvent (e.noteOn ? juce::MidiMessage::noteOn  (e.channel, e.note, e.velocity)
+                                        : juce::MidiMessage::noteOff (e.channel, e.note, e.velocity), 0);
+            }
+        };
+        emit (rd.startIndex1, rd.blockSize1);
+        emit (rd.startIndex2, rd.blockSize2);
+    }
 
     // Arpeggiator rewrites the MIDI stream (pass-through when disabled).
     arp.process (midi, buffer.getNumSamples(), currentBpm.load());
@@ -102,6 +122,30 @@ void ZandersWaveAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         if (synth.getVoice (i)->isVoiceActive())
             ++voices;
     activeVoices.store (voices);
+}
+
+//==============================================================================
+// On-screen-keyboard listener callbacks: fire on the message thread when the
+// user plays the MidiKeyboardComponent. They only enqueue into the lock-free
+// FIFO that processBlock drains; no audio-thread locking is involved.
+void ZandersWaveAudioProcessor::handleNoteOn (juce::MidiKeyboardState*, int ch, int note, float vel)
+{
+    pushKeyEvent ({ (juce::uint8) ch, (juce::uint8) note,
+                    (juce::uint8) juce::jlimit (1, 127, juce::roundToInt (vel * 127.0f)), true });
+}
+
+void ZandersWaveAudioProcessor::handleNoteOff (juce::MidiKeyboardState*, int ch, int note, float vel)
+{
+    pushKeyEvent ({ (juce::uint8) ch, (juce::uint8) note,
+                    (juce::uint8) juce::jlimit (0, 127, juce::roundToInt (vel * 127.0f)), false });
+}
+
+void ZandersWaveAudioProcessor::pushKeyEvent (const KeyEvent& e) noexcept
+{
+    const auto wr = kbFifo.write (1);
+    if (wr.blockSize1 > 0)      kbEvents[(size_t) wr.startIndex1] = e;
+    else if (wr.blockSize2 > 0) kbEvents[(size_t) wr.startIndex2] = e;
+    // else: FIFO full -> drop the event (not reachable for hand-played input).
 }
 
 //==============================================================================

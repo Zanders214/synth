@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "Effects.h"
+#include "../RtSafety.h"
 #include <atomic>
 
 namespace zw
@@ -18,7 +19,7 @@ public:
     void prepare (const juce::dsp::ProcessSpec& spec);
     void prepareParams (juce::AudioProcessorValueTreeState& apvts);
     void reset();
-    void process (juce::dsp::AudioBlock<float>& block);
+    void process (juce::dsp::AudioBlock<float>& block) ZW_RT_NONBLOCKING;
 
 private:
     static bool on (const std::atomic<float>* p) noexcept { return p != nullptr && p->load() >= 0.5f; }

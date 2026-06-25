@@ -59,6 +59,29 @@ build/ZandersWave_artefacts/Release/
 > project settings (C/C++ uses CI-based analysis). Until the token is present, the build job runs and
 > the analysis step is skipped.
 
+## Performance monitoring
+SonarCloud covers code *quality*; two extra Linux workflows guard *performance* — DAWs are CPU-heavy,
+so the plugin must stay light and never stall the audio thread.
+
+- **`.github/workflows/quality.yml`** — deterministic gates:
+  - **RTSan** (`rtsan` job): builds the `rt_check` target with clang's
+    [RealtimeSanitizer](https://clang.llvm.org/docs/RealtimeSanitizer.html) (`-DZW_RT_SANITIZE=ON`)
+    and drives the real `processBlock`. The DSP hot paths we own — `ZWVoice::renderNextBlock` and
+    `FxChain::process` — are marked `ZW_RT_NONBLOCKING`, so any allocation, lock or syscall reached
+    from them fails the build. (The scope is the inner DSP rather than the whole callback so JUCE's
+    own uncontended `Synthesiser` lock isn't flagged.) Findings are bugs to fix;
+    `tests/rtsan_suppressions.txt` is an (empty by default) escape hatch for unavoidable cases.
+  - **pluginval** (`pluginval` job): runs `pluginval --strictness-level 5` against the built VST3.
+- **`.github/workflows/perf.yml`** — the "SonarCloud for performance": builds `perf_bench`
+  (`-DZW_BUILD_BENCH=ON`, [nanobench](https://github.com/martinus/nanobench)) which times the DSP graph
+  (full / voices / FX) and reports ns-per-block + real-time DSP-load %.
+  [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark) tracks the
+  trend on the `gh-pages` branch, comments on PR regressions and fails past a 150% threshold. Dashboard:
+  `https://<owner>.github.io/synth/dev/bench/` (one-time: create the `gh-pages` branch + enable Pages).
+
+> Local: `cmake -B build -G Ninja -DZW_BUILD_BENCH=ON && cmake --build build --target perf_bench && \
+> ./build/perf_bench_artefacts/*/perf_bench out.json`. RTSan needs clang ≥ 20.
+
 ## License
 The two bundled UI fonts (Space Grotesk, JetBrains Mono) are under the SIL Open Font License.
 JUCE is used under its own license terms.

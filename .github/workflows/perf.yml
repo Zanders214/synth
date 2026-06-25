@@ -1,0 +1,67 @@
+name: Performance Benchmark
+
+# Layer 1: "SonarCloud for performance" — times the DSP graph and tracks it over
+# time. github-action-benchmark stores each run to the gh-pages branch (trend
+# charts at https://<owner>.github.io/synth/dev/bench/), comments on PRs and
+# fails the job when a metric regresses past the alert threshold.
+#
+# Single runner only (no OS matrix): cross-OS timings aren't comparable and would
+# pollute one trend line. Linux scheduling is steadier than Windows for timing.
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+# Needed for github-action-benchmark to push data / comment.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: DSP micro-benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install JUCE Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb \
+            libasound2-dev libjack-jackd2-dev libcurl4-openssl-dev \
+            libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev \
+            libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev \
+            libxrender-dev libglu1-mesa-dev mesa-common-dev
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Configure (Release + bench)
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DZW_BUILD_BENCH=ON
+
+      - name: Build perf_bench
+        run: cmake --build build --target perf_bench --parallel
+
+      - name: Run benchmarks
+        # ScopedJuceInitialiser_GUI needs a display even headless. JUCE nests the
+        # binary under an artefacts/<config>/ dir, so discover it rather than guess.
+        run: |
+          BIN=$(find build -type f -name perf_bench -path '*_artefacts*' | head -1)
+          echo "running $BIN"
+          xvfb-run -a "$BIN" bench_result.json
+
+      - name: Store result + alert on regression
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: ZandersWave DSP
+          tool: customSmallerIsBetter
+          output-file-path: bench_result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+          # Publish the trend dashboard only from main; PRs just compare + comment.
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-threshold: '150%'
+          summary-always: true

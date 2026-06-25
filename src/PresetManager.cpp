@@ -59,9 +59,13 @@ void PresetManager::applyFactory (int index)
         return;
 
     resetToDefaults();
-    for (const auto& ov : factory[(size_t) index].overrides)
+    const auto& preset = factory[(size_t) index];
+    for (const auto& ov : preset.overrides)
         setActual (ov.id, ov.actual);
-    modMatrix.seedDefaults();
+    if (preset.clearMod)
+        modMatrix.clear();
+    else
+        modMatrix.seedDefaults();
 }
 
 void PresetManager::buildFactory()
@@ -69,8 +73,27 @@ void PresetManager::buildFactory()
     using namespace zw;
     factory.clear();
 
-    // 1. Init Saw — the default patch.
-    factory.push_back ({ "Init Saw", {} });
+    // 1. Init — a single basic saw, nothing else: one voice, no second osc,
+    //    no sub/noise, no filter, no FX, no modulation (Serum/Vital-style init).
+    factory.push_back ({ "Init", {
+        { id::osc ('A', "wtpos"),   1.0f },   // full saw
+        { id::osc ('A', "warp"),    0.0f },
+        { id::osc ('A', "unison"),  1.0f },   // single voice, no detune
+        { id::osc ('A', "detune"),  0.0f },
+        { id::osc ('A', "level"),   0.7f },
+        { id::osc ('B', "enable"),  0.0f },   // no second oscillator
+        { id::subEnable,    0.0f },           // no sub
+        { id::noiseEnable,  0.0f },           // no noise
+        { id::filterEnable, 0.0f },           // no filter
+        { id::env (1, "attack"),  0.0f },     // instant attack
+        { id::env (1, "sustain"), 1.0f },     // full sustain
+        { id::env (1, "release"), 0.1f },     // short release
+        { id::fx ("hyper",   "enable"), 0.0f },   // all FX off (these default ON)
+        { id::fx ("distort", "enable"), 0.0f },
+        { id::fx ("chorus",  "enable"), 0.0f },
+        { id::fx ("delay",   "enable"), 0.0f },
+        { id::fx ("reverb",  "enable"), 0.0f },
+        { id::fx ("eq",      "enable"), 0.0f } }, true });   // clearMod = true
 
     // 2. Hyper Lead — wide detuned bright lead.
     factory.push_back ({ "Hyper Lead", {

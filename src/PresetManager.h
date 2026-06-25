@@ -38,7 +38,7 @@ public:
 
 private:
     struct Override { juce::String id; float actual; };
-    struct Factory  { juce::String name; std::vector<Override> overrides; };
+    struct Factory  { juce::String name; std::vector<Override> overrides; bool clearMod = false; };
 
     void buildFactory();
     void resetToDefaults();

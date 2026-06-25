@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782389295159,
+  "lastUpdate": 1782392808412,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -131,6 +131,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 239861.395,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6f9979de99f38097e14ff6dd497e54ffd5be1be2",
+          "message": "perf: wavetable inner-loop hoist + fast-math approximations (#11)",
+          "timestamp": "2026-06-25T16:03:25+03:00",
+          "tree_id": "12304046753ec82d01d9203919187f8063b59634",
+          "url": "https://github.com/Zanders214/synth/commit/6f9979de99f38097e14ff6dd497e54ffd5be1be2"
+        },
+        "date": 1782392807991,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 384533.713,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.605,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 159144.462,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 225499.876,
             "unit": "ns/block"
           }
         ]

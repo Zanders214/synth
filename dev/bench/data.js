@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782421024756,
+  "lastUpdate": 1782470508262,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -351,6 +351,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 236255.264,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ec005988bda0db068524325e0598156ebb2c2d9e",
+          "message": "Add a clean \"Init\" factory patch as the startup default (#16)",
+          "timestamp": "2026-06-26T13:38:22+03:00",
+          "tree_id": "eac00dde50f46ecf691cb4c5d7edddd73da48050",
+          "url": "https://github.com/Zanders214/synth/commit/ec005988bda0db068524325e0598156ebb2c2d9e"
+        },
+        "date": 1782470507363,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 384233.083,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.602,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 159146.976,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 224697.335,
             "unit": "ns/block"
           }
         ]

@@ -9,6 +9,7 @@ static void prepOsc (OscRefs& r, const juce::AudioProcessorValueTreeState& s, ch
     r.wtselect  = s.getRawParameterValue (id::osc (ab, "wtselect"));
     r.wtpos     = s.getRawParameterValue (id::osc (ab, "wtpos"));
     r.warp      = s.getRawParameterValue (id::osc (ab, "warp"));
+    r.warpmode  = s.getRawParameterValue (id::osc (ab, "warpmode"));
     r.unison    = s.getRawParameterValue (id::osc (ab, "unison"));
     r.detune    = s.getRawParameterValue (id::osc (ab, "detune"));
     r.level     = s.getRawParameterValue (id::osc (ab, "level"));

@@ -181,14 +181,14 @@ void ZWVoice::updateBlockParams (int numSamples)
         oscA.setWavetable (library.getByIndex ((int) p.a.wtselect->load()));
         oscA.update ({ modded (ModDest::OscAWt), modded (ModDest::OscAWarp), (int) p.a.unison->load(),
                        modded (ModDest::OscADetune), modded (ModDest::OscALevel), modded (ModDest::OscAPan),
-                       p.a.uniwidth->load(), freqFor (p.a) });
+                       p.a.uniwidth->load(), freqFor (p.a), (int) p.a.warpmode->load() });
     }
     if (bOn)
     {
         oscB.setWavetable (library.getByIndex ((int) p.b.wtselect->load()));
         oscB.update ({ modded (ModDest::OscBWt), modded (ModDest::OscBWarp), (int) p.b.unison->load(),
                        modded (ModDest::OscBDetune), modded (ModDest::OscBLevel), modded (ModDest::OscBPan),
-                       p.b.uniwidth->load(), freqFor (p.b) });
+                       p.b.uniwidth->load(), freqFor (p.b), (int) p.b.warpmode->load() });
     }
 
     if (subOn)

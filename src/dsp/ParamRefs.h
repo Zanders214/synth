@@ -20,6 +20,7 @@ struct OscRefs
     std::atomic<float> *wtselect {};
     std::atomic<float> *wtpos {};
     std::atomic<float> *warp {};
+    std::atomic<float> *warpmode {};
     std::atomic<float> *unison {};
     std::atomic<float> *detune {};
     std::atomic<float> *level {};

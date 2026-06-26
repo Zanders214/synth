@@ -23,3 +23,8 @@ Thumbs.db
 
 # Dev UI snapshots
 /ui_snapshot.png
+/out.png
+/voice_tab.png
+
+# Local JUCE source used for sandbox builds (FETCHCONTENT_SOURCE_DIR_JUCE)
+/.juce-src/

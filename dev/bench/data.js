@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782481186070,
+  "lastUpdate": 1782483184292,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -571,6 +571,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 238678.991,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "af482f8504381401b90361dc8694c4afc1c3dd20",
+          "message": "Make ENV1-3 and LFO1-4 editable in the left rail (#24)\n\nThe left rail only edited ENV1 (ADSR + display) and LFO1 (rate/depth/rise),\neven though ENV2/3 and LFO2-4 are fully DSP-wired and feed the mod matrix.\nThose instances appeared only as decorative source chips and were uneditable.\n\nAdd a small view-only segmented index selector to each module -- ENV [1|2|3]\nand LFO [1|2|3|4] -- that repoints that module's existing controls (and the\nAdsrDisplay) to the selected instance's APVTS params and updates the module\ntitle. Since the mod matrix reads these same id::env/id::lfo params, editing\nthem now changes how those sources modulate, live.\n\n- LabeledKnob: add repoint() (shared bindTo helper) to rebind to a new param.\n- Module: add setTitle() so the header tracks the selected index.\n- AdsrDisplay: add setEnvIndex() to follow a different envelope at runtime.\n- ZWPanel: new selector buttons + selectEnv()/selectLfo(); attachments only,\n  no parameter atomics written; all on the message thread.\n\n\nClaude-Session: https://claude.ai/code/session_01CdRypUTw9hF5JPVmc52yac\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-26T17:09:50+03:00",
+          "tree_id": "7d2b8ab21c8e65fb84b3556b2f7996b039f60aa1",
+          "url": "https://github.com/Zanders214/synth/commit/af482f8504381401b90361dc8694c4afc1c3dd20"
+        },
+        "date": 1782483183983,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 395978.762,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.712,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143763.981,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 250105.301,
             "unit": "ns/block"
           }
         ]

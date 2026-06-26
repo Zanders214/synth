@@ -28,7 +28,7 @@ struct PresetManagerTests : juce::UnitTest
             expectGreaterThan (n, 5, "expected at least six factory presets");
             expectEquals (n, 6);
 
-            expectEquals (pm.factoryName (0), juce::String ("Init Saw"));
+            expectEquals (pm.factoryName (0), juce::String ("Init"));
             expectEquals (pm.factoryName (3), juce::String ("Sub Bass"));
             expectEquals (pm.factoryName (5), juce::String ("Vapor Keys"));
 
@@ -85,25 +85,32 @@ struct PresetManagerTests : juce::UnitTest
             expectGreaterThan (cutoff, 5000.0f, "Hyper Lead is bright (cutoff 8500 Hz)");
         }
 
-        beginTest ("applyFactory(InitSaw) resets every parameter to default");
+        beginTest ("applyFactory(Init) strips to a single clean oscillator with no modulation");
         {
             zwtest::DummyProcessor proc;
             ModMatrix matrix;
             PresetManager pm (proc, proc.apvts, matrix);
 
-            // Capture the pristine defaults.
-            const float subDefault    = zwtest::rawParam (proc.apvts, id::subLevel);
-            const float masterDefault = zwtest::rawParam (proc.apvts, id::masterOut);
-
-            // Disturb the state with another patch, then load Init Saw (no overrides).
+            // Disturb the state with another patch first.
             pm.applyFactory (3);   // Sub Bass moves things around
-            expectNotEquals (zwtest::rawParam (proc.apvts, id::subLevel), subDefault);
 
-            pm.applyFactory (0);   // Init Saw == defaults only
+            pm.applyFactory (0);   // Init: bare single saw, nothing on it
 
-            expectWithinAbsoluteError (zwtest::rawParam (proc.apvts, id::subLevel), subDefault, 1.0e-4f);
-            expectWithinAbsoluteError (zwtest::rawParam (proc.apvts, id::masterOut), masterDefault, 1.0e-4f);
-            // Known default for masterOut is 0.80 (percent).
+            // Clean voicing: one oscillator, single voice, no sub/noise/filter.
+            expectWithinAbsoluteError (zwtest::rawParam (proc.apvts, id::osc ('A', "unison")), 1.0f, 1.0e-4f);
+            expectEquals (zwtest::rawParam (proc.apvts, id::osc ('B', "enable")), 0.0f, "Osc B must be off");
+            expectEquals (zwtest::rawParam (proc.apvts, id::subEnable),    0.0f, "sub must be off");
+            expectEquals (zwtest::rawParam (proc.apvts, id::filterEnable), 0.0f, "filter must be off");
+
+            // No effects.
+            expectEquals (zwtest::rawParam (proc.apvts, id::fx ("reverb", "enable")), 0.0f, "reverb must be off");
+            expectEquals (zwtest::rawParam (proc.apvts, id::fx ("delay",  "enable")), 0.0f, "delay must be off");
+
+            // No modulation routes (amp env is hardwired, so the patch still sounds).
+            expectEquals (matrix.size(), 0, "Init must clear the mod matrix");
+
+            // Parameters Init does not override fall back to their defaults
+            // (covers resetToDefaults()); masterOut default is 0.80 (percent).
             expectWithinAbsoluteError (zwtest::rawParam (proc.apvts, id::masterOut), 0.80f, 0.01f);
         }
 

@@ -19,6 +19,10 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
 
     // Collect on-screen-keyboard notes on the message thread (see processBlock).
     keyboardState.addListener (this);
+
+    // Boot into the clean Init patch (program 0) so a fresh instance opens on a
+    // basic single-oscillator sound, like Serum/Vital open on their init patch.
+    presets.applyFactory (0);
 }
 
 ZandersWaveAudioProcessor::~ZandersWaveAudioProcessor()

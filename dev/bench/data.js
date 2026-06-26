@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782481095017,
+  "lastUpdate": 1782481131034,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -483,6 +483,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 136594.563,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5b48ab8f8a8f3afa067116e4ac5b9c40663487b0",
+          "message": "Make the centre oscillator editor source-switchable between OSC A and B (#21)\n\nThe centre \"hero\" oscillator editor (3D WavetableDisplay + WT POS / WARP /\nUNISON / DETUNE knobs + LEVEL / PAN sliders) was hardwired to OSC A. OSC B\nhas the identical, fully DSP-wired parameter set but was only reachable via\nits enable + level in the SOURCES mixer, leaving its wavetable, warp, unison,\ndetune, pan, etc. uneditable.\n\nAdd a small A/B radio selector in the OSC module title row that repoints the\nhero editor at the chosen oscillator's APVTS params. setOscSource() rebuilds\nthe knob row (recreating the LabeledKnobs so their SliderAttachments rebind\nto osc A/B IDs) and repoints the WavetableDisplay, then relays out. IDs are\nread via id::osc('A'/'B', name); all binding stays through APVTS attachments.\n\nEdits are confined to the OSC module construction + its layout block, a new\nsetOscSource() helper, a clearly-commented new-member block, and a small\nrepoint method on WavetableDisplay (header-only, zw, theme/lnf styled).\n\n\nClaude-Session: https://claude.ai/code/session_01SF9Nwb33w9YmBUkZcrmXuY\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-26T16:35:10+03:00",
+          "tree_id": "d00ca4e06e0fa0fc98b95b7a766e2c919cfe024e",
+          "url": "https://github.com/Zanders214/synth/commit/5b48ab8f8a8f3afa067116e4ac5b9c40663487b0"
+        },
+        "date": 1782481130233,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 369311.757,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.462,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 142987.339,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 225689.473,
             "unit": "ns/block"
           }
         ]

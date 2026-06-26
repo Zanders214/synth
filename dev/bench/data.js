@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782483184292,
+  "lastUpdate": 1782486181653,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -615,6 +615,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 250105.301,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5e825f52a3cfa750873853f3ccd993a403b83dea",
+          "message": "Add editable FX RACK parameter controls (#25)",
+          "timestamp": "2026-06-26T17:59:39+03:00",
+          "tree_id": "f194a8aac32aca5eec657abec840318997afc13e",
+          "url": "https://github.com/Zanders214/synth/commit/5e825f52a3cfa750873853f3ccd993a403b83dea"
+        },
+        "date": 1782486181229,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 385212.738,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.611,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143566.052,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 238314.293,
             "unit": "ns/block"
           }
         ]

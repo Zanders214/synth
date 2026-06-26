@@ -23,19 +23,9 @@ public:
         slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 72, 14);
         slider.setNumDecimalPlacesToDisplay (2);
         slider.setColour (juce::Slider::textBoxTextColourId, theme::t2);
-        // Show the parameter's own formatted text (with units) in the value box.
-        if (const auto* rp = s.getParameter (id))
-        {
-            slider.textFromValueFunction = [rp] (double v)
-            { return rp->getText (rp->getNormalisableRange().convertTo0to1 ((float) v), 0); };
-            slider.valueFromTextFunction = [rp] (const juce::String& t)
-            { return (double) rp->getNormalisableRange().convertFrom0to1 (rp->getValueForText (t)); };
-        }
         if (arc != juce::Colour()) slider.setColour (juce::Slider::rotarySliderFillColourId, arc);
         slider.setLookAndFeel (&lf);
         slider.setTooltip (name);
-        if (const auto* p = s.getParameter (id))
-            slider.setDoubleClickReturnValue (true, p->getNormalisableRange().convertFrom0to1 (p->getDefaultValue()));
         addAndMakeVisible (slider);
 
         label.setText (name, juce::dontSendNotification);
@@ -44,11 +34,28 @@ public:
         label.setColour (juce::Label::textColourId, theme::tLabel);
         addAndMakeVisible (label);
 
-        att = std::make_unique<APVTS::SliderAttachment> (s, id, slider);
+        bindTo (s, id);
     }
+    // Rebind to a different APVTS parameter (e.g. switching ENV/LFO index). Same-role
+    // params share range/units, so only the attachment + value formatting change.
+    void repoint (APVTS& s, const juce::String& id) { bindTo (s, id); }
     void resized() override { auto r = getLocalBounds(); label.setBounds (r.removeFromTop (13)); slider.setBounds (r); }
     juce::Slider slider;
 private:
+    void bindTo (APVTS& s, const juce::String& id)
+    {
+        att.reset();   // detach before rebinding so the slider is never double-attached
+        // Show the parameter's own formatted text (with units) in the value box.
+        if (const auto* rp = s.getParameter (id))
+        {
+            slider.textFromValueFunction = [rp] (double v)
+            { return rp->getText (rp->getNormalisableRange().convertTo0to1 ((float) v), 0); };
+            slider.valueFromTextFunction = [rp] (const juce::String& t)
+            { return (double) rp->getNormalisableRange().convertFrom0to1 (rp->getValueForText (t)); };
+            slider.setDoubleClickReturnValue (true, rp->getNormalisableRange().convertFrom0to1 (rp->getDefaultValue()));
+        }
+        att = std::make_unique<APVTS::SliderAttachment> (s, id, slider);  // re-attach pushes current value
+    }
     juce::Label label;
     std::unique_ptr<APVTS::SliderAttachment> att;
 };
@@ -73,6 +80,7 @@ public:
         g.drawText (title.toUpperCase(), getLocalBounds().reduced (14, 10).removeFromTop (16),
                     juce::Justification::topLeft, false);
     }
+    void setTitle (const juce::String& t) { title = t; repaint(); }
     // Body rect in the PARENT's coordinate space — controls are children of the
     // panel (not of this module), so they must be laid out in panel coordinates.
     juce::Rectangle<int> body() const { return getBounds().reduced (14).withTrimmedTop (20); }
@@ -97,7 +105,7 @@ class ZWPanel : public juce::Component, private juce::Timer
 public:
     ZWPanel (ZandersWaveAudioProcessor& p, ZWLookAndFeel& lf)
         : proc (p), lnf (lf),
-          envMod ("ENV1 · AMP", lf), lfoMod ("LFO1", lf), oscMod ("OSC A", lf),
+          envMod ("ENV1 · AMP", lf), lfoMod ("LFO1", lf), oscMod ("OSC", lf),
           mixMod ("SOURCES", lf), filtMod ("FILTER", lf), outMod ("OUTPUT", lf),
           macroMod ("MACROS", lf), lowerMod ("WORKSPACE", lf),
           wtDisplay (p.apvts, id::osc ('A', "wtpos"), id::osc ('A', "warp")),
@@ -114,8 +122,6 @@ public:
 
         auto knob = [&] (const juce::String& id_, const juce::String& nm, juce::Colour arc = {})
         { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, true, arc)); addAndMakeVisible (k); return k; };
-        auto hslider = [&] (const juce::String& id_, const juce::String& nm)
-        { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, false)); addAndMakeVisible (k); return k; };
 
         // ENV1 ADSR
         envA = knob (id::env (1, "attack"), "ATK", theme::cyan);
@@ -128,13 +134,42 @@ public:
         lfoDepth = knob (id::lfo (1, "depth"),  "DEPTH", theme::pink);
         lfoRise  = knob (id::lfo (1, "rise"),   "RISE", theme::pink);
 
-        // OSC A
-        oscWt   = knob (id::osc ('A', "wtpos"),  "WT POS");
-        oscWarp = knob (id::osc ('A', "warp"),   "WARP");
-        oscUni  = knob (id::osc ('A', "unison"), "UNISON");
-        oscDet  = knob (id::osc ('A', "detune"), "DETUNE");
-        oscLvl  = hslider (id::osc ('A', "level"), "LEVEL");
-        oscPan  = hslider (id::osc ('A', "pan"),   "PAN");
+        // ENV/LFO index selectors — view-only segmented buttons that repoint the
+        // module's controls (and the ADSR display) to the chosen instance's params.
+        // Not a synth parameter, so these carry no APVTS attachment.
+        for (int n = 1; n <= 3; ++n)
+        {
+            auto* b = envSelBtn.add (new juce::TextButton (juce::String (n)));
+            b->setClickingTogglesState (true); b->setRadioGroupId (9001);
+            b->setLookAndFeel (&lnf); b->onClick = [this, n] { selectEnv (n); };
+            addAndMakeVisible (b);
+        }
+        for (int n = 1; n <= 4; ++n)
+        {
+            auto* b = lfoSelBtn.add (new juce::TextButton (juce::String (n)));
+            b->setClickingTogglesState (true); b->setRadioGroupId (9002);
+            b->setLookAndFeel (&lnf); b->onClick = [this, n] { selectLfo (n); };
+            addAndMakeVisible (b);
+        }
+        selectEnv (1); selectLfo (1);   // set initial lit state + titles
+
+        // OSC A/B hero editor — source-switchable. The A/B selector repoints the
+        // WavetableDisplay + knob row at the chosen oscillator's APVTS params via
+        // setOscSource(), which rebuilds the slider attachments on each switch.
+        auto makeSel = [&] (const juce::String& text, char ab, bool on)
+        {
+            auto* b = toggles.add (std::make_unique<juce::TextButton> (text));
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (700);
+            b->setLookAndFeel (&lf);
+            b->setToggleState (on, juce::dontSendNotification);
+            b->onClick = [this, ab] { setOscSource (ab); };
+            addAndMakeVisible (b);
+            return b;
+        };
+        oscSelA = makeSel ("A", 'A', true);
+        oscSelB = makeSel ("B", 'B', false);
+        setOscSource ('A');
 
         // Source mixer (level sliders + enables)
         std::array<const char*, 4> srcIds  { "oscA_level", "oscB_level", "sub_level", "noise_level" };
@@ -267,17 +302,26 @@ public:
 
         // Left rail: ENV + LFO
         auto envArea = left.removeFromTop (300); envMod.setBounds (envArea);
+        { auto hr = envArea.reduced (12, 9).removeFromTop (18).removeFromRight (3 * 22);  // selector row, top-right
+          for (auto* b : envSelBtn) b->setBounds (hr.removeFromLeft (22).reduced (1, 1)); }
         { auto b = envMod.body(); adsr.setBounds (b.removeFromTop (96)); b.removeFromTop (8);
           auto row = b.removeFromTop (90); const int kw = row.getWidth() / 4;
           envA->setBounds (row.removeFromLeft (kw)); envD->setBounds (row.removeFromLeft (kw));
           envS->setBounds (row.removeFromLeft (kw)); envR->setBounds (row); }
         left.removeFromTop (12);
         lfoMod.setBounds (left);
+        { auto hr = left.reduced (12, 9).removeFromTop (18).removeFromRight (4 * 22);  // selector row, top-right
+          for (auto* b : lfoSelBtn) b->setBounds (hr.removeFromLeft (22).reduced (1, 1)); }
         { auto b = lfoMod.body(); auto row = b.removeFromTop (90); const int kw = row.getWidth() / 3;
           lfoRate->setBounds (row.removeFromLeft (kw)); lfoDepth->setBounds (row.removeFromLeft (kw)); lfoRise->setBounds (row); }
 
         // Centre: OSC editor + source mixer
         auto oscArea = centre.removeFromTop (380); oscMod.setBounds (oscArea);
+        // A/B source selector in the module title row (top-right), so it does not
+        // consume the body space used by the display + knob row.
+        { const int selW = 30, selH = 18, selY = oscArea.getY() + 10;
+          oscSelB->setBounds (oscArea.getRight() - 14 - selW,         selY, selW, selH);
+          oscSelA->setBounds (oscArea.getRight() - 14 - selW * 2 - 4, selY, selW, selH); }
         { auto b = oscMod.body(); wtDisplay.setBounds (b.removeFromTop (190)); b.removeFromTop (10);
           auto row = b.removeFromTop (90); const int kw = row.getWidth() / 4;
           oscWt->setBounds (row.removeFromLeft (kw)); oscWarp->setBounds (row.removeFromLeft (kw));
@@ -425,6 +469,29 @@ private:
             openBrowser();
     }
 
+    // Repoint the centre "hero" oscillator editor at OSC A or B. The knob row's
+    // APVTS attachments live inside the LabeledKnobs, so switching rebuilds the
+    // row (new attachments) and repoints the WavetableDisplay, then relayouts.
+    void setOscSource (char ab)
+    {
+        oscSource = ab;
+        oscKnobs.clear();                                  // drops old attachments
+        auto add = [&] (const juce::String& id_, const juce::String& nm, bool rotary)
+        {
+            auto* k = oscKnobs.add (std::make_unique<LabeledKnob> (proc.apvts, id_, nm, lnf, rotary));
+            addAndMakeVisible (k);
+            return k;
+        };
+        oscWt   = add (id::osc (ab, "wtpos"),  "WT POS", true);
+        oscWarp = add (id::osc (ab, "warp"),   "WARP",   true);
+        oscUni  = add (id::osc (ab, "unison"), "UNISON", true);
+        oscDet  = add (id::osc (ab, "detune"), "DETUNE", true);
+        oscLvl  = add (id::osc (ab, "level"),  "LEVEL",  false);
+        oscPan  = add (id::osc (ab, "pan"),    "PAN",    false);
+        wtDisplay.setSource (proc.apvts, id::osc (ab, "wtpos"), id::osc (ab, "warp"));
+        if (getWidth() > 0) resized();                     // relayout new knobs (skip during ctor)
+    }
+
     juce::TextButton* makeToggle (const juce::String& id, const juce::String& text)
     {
         auto* b = toggles.add (std::make_unique<juce::TextButton> (text));
@@ -474,6 +541,13 @@ private:
         arpMode = makeComboOn (arpPage, id::arpMode, choices::arpMode());
         for (int i = 0; i < 16; ++i)
             arpStep[i] = makeToggleOn (arpPage, id::arpStep (i + 1), juce::String (i + 1));
+        // Octaves (stepped 1..4), gate and swing: page-confined knobs (cf. wtFrame below).
+        arpOctaves = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpOctaves, "OCTAVES", lnf, true));
+        arpPage->addAndMakeVisible (arpOctaves);
+        arpGate    = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpGate,    "GATE",    lnf, true));
+        arpPage->addAndMakeVisible (arpGate);
+        arpSwing   = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpSwing,   "SWING",   lnf, true));
+        arpPage->addAndMakeVisible (arpSwing);
         arpPageComp = arpPage; addChildComponent (arpPage);
 
         // Wavetable page: per-osc table selectors + .wav import + frame slider.
@@ -541,7 +615,11 @@ private:
           arpRun->setBounds (top.removeFromLeft (70)); top.removeFromLeft (8);
           arpRate->setBounds (top.removeFromLeft (110)); top.removeFromLeft (8);
           arpMode->setBounds (top.removeFromLeft (130));
-          b.removeFromTop (10); auto grid = b.removeFromTop (60); const int sw = grid.getWidth() / 16;
+          b.removeFromTop (6); auto knobRow = b.removeFromTop (52);
+          arpOctaves->setBounds (knobRow.removeFromLeft (84)); knobRow.removeFromLeft (10);
+          arpGate->setBounds    (knobRow.removeFromLeft (84)); knobRow.removeFromLeft (10);
+          arpSwing->setBounds   (knobRow.removeFromLeft (84));
+          b.removeFromTop (8); auto grid = b.removeFromTop (32); const int sw = grid.getWidth() / 16;
           for (auto* st : arpStep) st->setBounds (grid.removeFromLeft (sw).reduced (2)); }
         if (wtPageComp != nullptr)
         {
@@ -615,6 +693,40 @@ private:
     juce::Component* wtPageComp{};
     juce::Component* matrixPage{};
 
+    //==========================================================================
+    // Editable ENV/LFO module index selectors (view-only; not persisted in APVTS).
+    // The segmented buttons repoint the existing ENV/LFO controls + ADSR display
+    // to the chosen instance's params via selectEnv()/selectLfo() below.
+    int envSel = 1, lfoSel = 1;
+    juce::OwnedArray<juce::TextButton> envSelBtn;   // indices 1..3
+    juce::OwnedArray<juce::TextButton> lfoSelBtn;   // indices 1..4
+
+    void selectEnv (int n)
+    {
+        auto& s = proc.apvts;
+        envA->repoint (s, id::env (n, "attack"));
+        envD->repoint (s, id::env (n, "decay"));
+        envS->repoint (s, id::env (n, "sustain"));
+        envR->repoint (s, id::env (n, "release"));
+        adsr.setEnvIndex (s, n);
+        envMod.setTitle (n == 1 ? "ENV1 · AMP" : "ENV" + juce::String (n) + " · MOD");
+        envSel = n;
+        for (int i = 0; i < envSelBtn.size(); ++i)
+            envSelBtn[i]->setToggleState (i + 1 == n, juce::dontSendNotification);
+    }
+    void selectLfo (int n)
+    {
+        auto& s = proc.apvts;
+        lfoRate ->repoint (s, id::lfo (n, "ratehz"));
+        lfoDepth->repoint (s, id::lfo (n, "depth"));
+        lfoRise ->repoint (s, id::lfo (n, "rise"));
+        lfoMod.setTitle ("LFO" + juce::String (n));
+        lfoSel = n;
+        for (int i = 0; i < lfoSelBtn.size(); ++i)
+            lfoSelBtn[i]->setToggleState (i + 1 == n, juce::dontSendNotification);
+    }
+    //==========================================================================
+
     juce::TextButton prevBtn;
     juce::TextButton nextBtn;
     juce::TooltipWindow tooltip { this, 600 };
@@ -630,6 +742,13 @@ private:
     std::unique_ptr<juce::FileChooser> fileChooser;
     //==========================================================================
 
+    // ---- ARP octave/gate/swing controls (ARP-tab) — see buildLowerTabs() arp
+    // block and layoutPages(). Stepped octaves knob + gate/swing 0..1 knobs. ----
+    LabeledKnob* arpOctaves{};
+    LabeledKnob* arpGate{};
+    LabeledKnob* arpSwing{};
+    //==========================================================================
+
     // ---- Preset browser (header) ----
     juce::TextButton saveBtn;
     zw::PresetBrowser presetBrowser { proc.getPresetManager(), lnf };
@@ -642,6 +761,15 @@ private:
     // Owned by tabPages; this is a non-owning back-pointer kept for symmetry
     // with the other tab pages (matrixPage/arpPageComp/wtPageComp).
     juce::Component* fxRackPage{};
+
+    // OSC A/B hero editor (source-switchable centre module) — see setOscSource(),
+    // the OSC construction block and its resized() layout. oscKnobs owns the live
+    // knob row so a switch can rebuild attachments; oscWt..oscPan point into it.
+    // The selectors live in `toggles` (lnf cleanup) but carry no APVTS attachment.
+    char oscSource = 'A';
+    juce::OwnedArray<LabeledKnob> oscKnobs;
+    juce::TextButton* oscSelA{};
+    juce::TextButton* oscSelB{};
     //==========================================================================
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZWPanel)

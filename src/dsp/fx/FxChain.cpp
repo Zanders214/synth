@@ -38,8 +38,8 @@ void FxChain::process (juce::dsp::AudioBlock<float>& block)
     if (on (hy.enable))  { hyper.setParams   (val (hy.p1), (int) val (hy.p2), val (hy.p3), val (hy.p4)); hyper.process (block); }
     if (on (di.enable))  { distort.setParams (val (di.p1), val (di.p2), val (di.p3), val (di.p4), (int) val (di.p5)); distort.process (block); }
     if (on (fl.enable))  { flanger.setParams (val (fl.p1), val (fl.p2), val (fl.p3), val (fl.p4)); flanger.process (block); }
-    if (on (ph.enable))  { phaser.setParams  (val (ph.p1), val (ph.p2), val (ph.p4)); phaser.process (block); }
-    if (on (ch.enable))  { chorus.setParams  (val (ch.p1), val (ch.p2), val (ch.p4)); chorus.process (block); }
+    if (on (ph.enable))  { phaser.setParams  (val (ph.p1), val (ph.p2), (int) val (ph.p3), val (ph.p4)); phaser.process (block); }
+    if (on (ch.enable))  { chorus.setParams  (val (ch.p1), val (ch.p2), (int) val (ch.p3), val (ch.p4)); chorus.process (block); }
     if (on (dl.enable))  { delay.setParams   (val (dl.p1), val (dl.p2), val (dl.p3), val (dl.p4)); delay.process (block); }
     if (on (rv.enable))  { reverb.setParams  (val (rv.p1), val (rv.p2), val (rv.p3), val (rv.p4)); reverb.process (block); }
     if (on (cp.enable))  { comp.setParams    (val (cp.p1), val (cp.p2), val (cp.p3), val (cp.p4)); comp.process (block); }

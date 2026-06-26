@@ -208,29 +208,128 @@ private:
 };
 
 //==============================================================================
-class Phaser
+class Phaser   // custom variable-stage all-pass cascade with feedback + wet/dry mix
 {
 public:
-    void prepare (const juce::dsp::ProcessSpec& s) { ph.prepare (s); }
-    void reset() { ph.reset(); }
-    void setParams (float rateHz, float depth_, float mix_)
-    { ph.setRate (rateHz); ph.setDepth (depth_); ph.setCentreFrequency (600.0f); ph.setFeedback (0.5f); ph.setMix (mix_); }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); ph.process (c); }
+    static constexpr int kMaxStages = 12;
+
+    void prepare (const juce::dsp::ProcessSpec& s) { sr = s.sampleRate; reset(); }
+    void reset()
+    {
+        for (auto& ch : apState) ch.fill (0.0f);
+        fbState.fill (0.0f);
+        phase = 0.0f;
+    }
+    void setParams (float rateHz, float depth_, int stages_, float mix_)
+    { rate = rateHz; depth = juce::jlimit (0.0f, 1.0f, depth_);
+      stages = juce::jlimit (2, kMaxStages, stages_); mix = mix_; }
+
+    void process (juce::dsp::AudioBlock<float>& block)
+    {
+        const auto ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
+        for (int i = 0; i < ns; ++i)
+        {
+            phase += rate / (float) sr; if (phase >= 1.0f) phase -= 1.0f;
+            const float lfo = 0.5f + 0.5f * fastmath::sinTurns (phase);   // 0..1
+            // Sweep the all-pass break frequency; depth widens the swept span.
+            const float fMin = 300.0f;
+            const float fMax = 600.0f + depth * 2400.0f;
+            const float fc = fMin + (fMax - fMin) * lfo;
+            const float t = std::tan (juce::MathConstants<float>::pi * fc / (float) sr);
+            const float g = (t - 1.0f) / (t + 1.0f);   // first-order all-pass coefficient
+            for (int c = 0; c < nc; ++c)
+            {
+                auto* x = block.getChannelPointer ((size_t) c);
+                float s = x[i] + fbState[c] * feedback;
+                for (int k = 0; k < stages; ++k)
+                {
+                    const float y = g * s + apState[c][k];
+                    apState[c][k] = s - g * y;
+                    s = y;
+                }
+                fbState[c] = s;
+                x[i] = x[i] * (1.0f - mix) + s * mix;
+            }
+        }
+    }
+
 private:
-    juce::dsp::Phaser<float> ph;
+    double sr = 44100.0; int stages = 6;
+    float rate = 0.3f;
+    float depth = 0.5f;
+    float mix = 0.5f;
+    float phase = 0.0f;
+    static constexpr float feedback = 0.5f;   // matches the old juce::dsp::Phaser setting
+    std::array<std::array<float, kMaxStages>, 2> apState {};
+    std::array<float, 2> fbState { 0.0f, 0.0f };
 };
 
 //==============================================================================
-class Chorus
+class Chorus   // custom multi-voice modulated-delay chorus (N summed delay-tap voices)
 {
 public:
-    void prepare (const juce::dsp::ProcessSpec& s) { ch.prepare (s); }
-    void reset() { ch.reset(); }
-    void setParams (float rateHz, float depth_, float mix_)
-    { ch.setRate (rateHz); ch.setDepth (depth_); ch.setCentreDelay (12.0f); ch.setFeedback (0.2f); ch.setMix (mix_); }
-    void process (juce::dsp::AudioBlock<float>& block) { juce::dsp::ProcessContextReplacing c (block); ch.process (c); }
+    static constexpr int kMaxVoices = 4;
+
+    void prepare (const juce::dsp::ProcessSpec& s)
+    {
+        sr = s.sampleRate; dry.prepare (s);
+        line.setMaximumDelayInSamples ((int) (sr * 0.05) + 4);
+        line.prepare (s); line.reset();
+        staggerPhases();
+    }
+    void reset() { line.reset(); staggerPhases(); }
+    void setParams (float rateHz, float depth_, int voices_, float mix_)
+    { rate = rateHz; depth = juce::jlimit (0.0f, 1.0f, depth_);
+      voices = juce::jlimit (1, kMaxVoices, voices_); mix = mix_; }
+
+    void process (juce::dsp::AudioBlock<float>& block)
+    {
+        const auto ns = (int) block.getNumSamples();
+        const auto nc = (int) block.getNumChannels();
+        dry.copyFrom (block);
+        const float centreMs = 12.0f;
+        const float depthMs  = 1.0f + depth * 7.0f;   // +/- modulation span around centre
+        const float norm = 1.0f / std::sqrt ((float) voices);
+        for (int i = 0; i < ns; ++i)
+        {
+            for (int v = 0; v < voices; ++v)
+            {
+                lfoPhase[v] += (rate * (1.0f + 0.07f * (float) v)) / (float) sr;   // slight per-voice detune
+                if (lfoPhase[v] >= 1.0f) lfoPhase[v] -= 1.0f;
+            }
+            for (int c = 0; c < nc; ++c)
+            {
+                auto* x = block.getChannelPointer ((size_t) c);
+                line.pushSample (c, x[i]);
+                float wet = 0.0f;
+                for (int v = 0; v < voices; ++v)
+                {
+                    const float stereo = (c == 1) ? 0.25f : 0.0f;
+                    const float mod = fastmath::sinTurns (lfoPhase[v] + stereo);   // -1..1
+                    const float dms = centreMs + depthMs * mod;
+                    const float dsamp = juce::jmax (1.0f, (float) (dms * 0.001 * sr));
+                    // Read each voice as a tap off the one line; advance the read
+                    // pointer exactly once per sample (on the last tap) so it stays
+                    // locked to the write pointer.
+                    wet += line.popSample (c, dsamp, v == voices - 1);
+                }
+                x[i] = wet * norm;
+            }
+        }
+        blend (block, dry.buf, mix);
+    }
+
 private:
-    juce::dsp::Chorus<float> ch;
+    void staggerPhases() { for (int v = 0; v < kMaxVoices; ++v) lfoPhase[(size_t) v] = (float) v / (float) kMaxVoices; }
+
+    double sr = 44100.0; int voices = 2;
+    float rate = 0.8f;
+    float depth = 0.3f;
+    float mix = 0.5f;
+    std::array<float, kMaxVoices> lfoPhase { 0.0f, 0.0f, 0.0f, 0.0f };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> line;
+    DryStore dry;
 };
 
 //==============================================================================

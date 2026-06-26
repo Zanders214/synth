@@ -36,6 +36,15 @@ public:
         : wt (s.getRawParameterValue (wtId)), warp (s.getRawParameterValue (warpId))
     {}
 
+    // Repoint the display at another oscillator's params (e.g. OSC A -> OSC B).
+    void setSource (const juce::AudioProcessorValueTreeState& s,
+                    const juce::String& wtId, const juce::String& warpId)
+    {
+        wt   = s.getRawParameterValue (wtId);
+        warp = s.getRawParameterValue (warpId);
+        repaint();
+    }
+
     void paint (juce::Graphics& g) override
     {
         auto r = getLocalBounds().toFloat().reduced (2.0f);
@@ -150,6 +159,16 @@ public:
         d = s.getRawParameterValue (id::env (envIndex, "decay"));
         sus = s.getRawParameterValue (id::env (envIndex, "sustain"));
         rel = s.getRawParameterValue (id::env (envIndex, "release"));
+    }
+
+    // Repoint the display at a different envelope instance (1..3) at runtime.
+    void setEnvIndex (const juce::AudioProcessorValueTreeState& s, int envIndex)
+    {
+        a   = s.getRawParameterValue (id::env (envIndex, "attack"));
+        d   = s.getRawParameterValue (id::env (envIndex, "decay"));
+        sus = s.getRawParameterValue (id::env (envIndex, "sustain"));
+        rel = s.getRawParameterValue (id::env (envIndex, "release"));
+        repaint();
     }
 
     void paint (juce::Graphics& g) override

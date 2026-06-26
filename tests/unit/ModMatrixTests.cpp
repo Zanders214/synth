@@ -331,6 +331,41 @@ struct ModMatrixTests : juce::UnitTest
             }
         }
 
+        beginTest ("setRoutes replaces the list and survives a value-tree round-trip");
+        {
+            // Mirrors how the UI editor commits edits: build a full route list and
+            // publish it in one shot via setRoutes, then persist + restore.
+            std::vector<zw::ModRoute> edited {
+                { zw::ModSource::Lfo2,     zw::ModDest::OscAPan,  0.80f },
+                { zw::ModSource::Velocity, zw::ModDest::Cutoff,  -0.25f },
+                { zw::ModSource::Macro2,   zw::ModDest::Drive,    1.00f },
+            };
+
+            zw::ModMatrix a;             // starts with defaults
+            a.setRoutes (edited);
+            expectEquals (a.size(), (int) edited.size(), "setRoutes replaces wholesale");
+
+            const auto ra = a.getRoutes();
+            for (size_t i = 0; i < edited.size(); ++i)
+            {
+                expect (ra[i].source == edited[i].source);
+                expect (ra[i].dest   == edited[i].dest);
+                expectWithinAbsoluteError (ra[i].amount, edited[i].amount, 1.0e-6f);
+            }
+
+            zw::ModMatrix b;
+            b.fromValueTree (a.toValueTree());
+            expectEquals (b.size(), a.size());
+
+            const auto rb = b.getRoutes();
+            for (size_t i = 0; i < ra.size(); ++i)
+            {
+                expect (rb[i].source == ra[i].source);
+                expect (rb[i].dest   == ra[i].dest);
+                expectWithinAbsoluteError (rb[i].amount, ra[i].amount, 1.0e-6f);
+            }
+        }
+
         beginTest ("fromValueTree ignores wrong root type");
         {
             zw::ModMatrix mm;   // defaults

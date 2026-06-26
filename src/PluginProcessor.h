@@ -50,6 +50,7 @@ public:
     void changeProgramName (int, const juce::String&) override { /* no-op: factory presets are read-only */ }
 
     zw::PresetManager& getPresetManager() { return presets; }
+    zw::ModMatrix&     getModMatrix()     noexcept { return modMatrix; }
 
     // Factory wavetable library + user-import slot. The editor's WAVETABLE tab
     // imports .wav files into it (message thread); voices read it on the audio

@@ -176,11 +176,11 @@ void ZWVoice::updateBlockParams (int numSamples)
     if (aOn)
         oscA.update ({ modded (ModDest::OscAWt), modded (ModDest::OscAWarp), (int) p.a.unison->load(),
                        modded (ModDest::OscADetune), modded (ModDest::OscALevel), modded (ModDest::OscAPan),
-                       p.a.uniwidth->load(), freqFor (p.a) });
+                       p.a.uniwidth->load(), freqFor (p.a), (int) p.a.warpmode->load() });
     if (bOn)
         oscB.update ({ modded (ModDest::OscBWt), modded (ModDest::OscBWarp), (int) p.b.unison->load(),
                        modded (ModDest::OscBDetune), modded (ModDest::OscBLevel), modded (ModDest::OscBPan),
-                       p.b.uniwidth->load(), freqFor (p.b) });
+                       p.b.uniwidth->load(), freqFor (p.b), (int) p.b.warpmode->load() });
 
     if (subOn)
         sub.update ((int) p.subWave->load(), (int) p.subOctave->load(),

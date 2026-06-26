@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782481131034,
+  "lastUpdate": 1782481186070,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -527,6 +527,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 225689.473,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b83d2c2f95695e625b564f3be0aea146fc661147",
+          "message": "Add OCTAVES, GATE, SWING controls to the ARP tab (#23)\n\nThe arpeggiator already reads arp_octaves, arp_gate and arp_swing in its\nDSP (octave-range expansion in buildSequence, gate length in emitStep,\nswing timing in process), but the ARP tab only exposed RUN, RATE, MODE\nand the 16-step grid, so these three parameters had no UI.\n\nAdd a knob row between the RATE/MODE row and the step grid:\n- OCTAVES: stepped rotary knob bound to the 1..4 int param\n- GATE / SWING: 0..1 rotary knobs\n\nControls are children of arpPage, built with the existing LabeledKnob\nbuilder and bound via APVTS SliderAttachments (the same pattern as the\nwavetable FRAME knob). IDs come from the id::arp* helpers; colours/fonts\ncome from the ZWLookAndFeel/theme. The step grid is shortened slightly to\nkeep everything within the lower-workspace tab height.\n\n\nClaude-Session: https://claude.ai/code/session_011M9io7H899auPjhyj9Za2G\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-26T16:36:19+03:00",
+          "tree_id": "f768b88ef0f0be8169e9487dcdcf8a0e2217e1f4",
+          "url": "https://github.com/Zanders214/synth/commit/b83d2c2f95695e625b564f3be0aea146fc661147"
+        },
+        "date": 1782481185791,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 383601.776,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.596,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143432.017,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 238678.991,
             "unit": "ns/block"
           }
         ]

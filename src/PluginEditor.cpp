@@ -2,6 +2,7 @@
 #include "ui/Theme.h"
 #include "ui/Displays.h"
 #include "ui/ModMatrixPanel.h"
+#include "ui/PresetBrowser.h"
 #include "Parameters.h"
 #include <array>
 
@@ -154,11 +155,18 @@ public:
         for (int i = 0; i < 4; ++i)
             macro[i] = knob (id::macro (i + 1), "MACRO " + juce::String (i + 1), theme::accent);
 
-        // Header: preset stepper
+        // Header: preset stepper + save + browser (well is clickable, see mouseDown)
         addAndMakeVisible (prevBtn); prevBtn.setButtonText ("<"); prevBtn.setLookAndFeel (&lf);
         addAndMakeVisible (nextBtn); nextBtn.setButtonText (">"); nextBtn.setLookAndFeel (&lf);
         prevBtn.onClick = [this] { stepPreset (-1); };
         nextBtn.onClick = [this] { stepPreset (1); };
+        addAndMakeVisible (saveBtn); saveBtn.setButtonText ("SAVE"); saveBtn.setLookAndFeel (&lf);
+        saveBtn.onClick = [this] { openSaveDialog(); };
+        presetBrowser.onLoadFactory = [this] (int i)         { loadCombined (i); };
+        presetBrowser.onLoadUser    = [this] (juce::String n) { loadUserByName (n); };
+        presetBrowser.onSave        = [this]                  { openSaveDialog(); };
+        presetTotal = proc.getPresetManager().getNumFactory()
+                    + proc.getPresetManager().getUserPresetNames().size();
 
         // Lower workspace tabs
         buildLowerTabs();
@@ -176,6 +184,7 @@ public:
         for (auto* b : toggles) b->setLookAndFeel (nullptr);
         for (auto* c : combos) c->setLookAndFeel (nullptr);
         prevBtn.setLookAndFeel (nullptr); nextBtn.setLookAndFeel (nullptr);
+        saveBtn.setLookAndFeel (nullptr);
     }
 
     void paint (juce::Graphics& g) override
@@ -206,7 +215,7 @@ public:
         g.setColour (theme::t1); g.setFont (lnf.displayFont (13.0f, true));
         g.drawText (presetName, well.reduced (28, 0), juce::Justification::centredLeft, false);
         g.setColour (theme::tMuted); g.setFont (lnf.monoFont (10.0f));
-        g.drawText (juce::String (proc.getCurrentProgram() + 1) + " / " + juce::String (proc.getNumPrograms()),
+        g.drawText (juce::String (presetIndex + 1) + " / " + juce::String (juce::jmax (1, presetTotal)),
                     well.reduced (10, 0), juce::Justification::centredRight, false);
 
         // Voice readout
@@ -234,9 +243,10 @@ public:
     {
         auto r = getLocalBounds();
         r.removeFromTop (52);                         // header
-        // preset stepper buttons in header
+        // preset stepper buttons + save in header
         prevBtn.setBounds (444, 17, 22, 22);
         nextBtn.setBounds (774, 17, 22, 22);
+        saveBtn.setBounds (806, 16, 60, 24);
         meter.setBounds (getWidth() - 150, 22, 120, 12);
 
         auto main = r.removeFromTop (560).reduced (16, 8);
@@ -315,17 +325,94 @@ public:
 private:
     void timerCallback() override
     {
-        presetName = proc.getProgramName (proc.getCurrentProgram());
-        if (presetName.isEmpty()) presetName = "Init";
+        // Mirror the host program name only while a factory program is selected;
+        // user presets aren't host programs, so keep the name set at load time.
+        if (presetIndex < proc.getPresetManager().getNumFactory())
+        {
+            presetIndex = proc.getCurrentProgram();
+            presetName = proc.getProgramName (presetIndex);
+            if (presetName.isEmpty()) presetName = "Init";
+        }
         repaint (0, 0, getWidth(), 52);
     }
 
-    void stepPreset (int dir)
+    // ---- Preset selection (combined factory + user list) ----
+    void loadCombined (int idx)
     {
-        const int n = proc.getNumPrograms();
-        int idx = (proc.getCurrentProgram() + dir + n) % n;
-        proc.setCurrentProgram (idx);
+        auto& pm = proc.getPresetManager();
+        const int nf = pm.getNumFactory();
+        const int total = nf + pm.getUserPresetNames().size();
+        if (total <= 0) return;
+
+        presetTotal = total;
+        idx = ((idx % total) + total) % total;          // wrap
+        presetIndex = idx;
+
+        if (idx < nf)
+        {
+            proc.setCurrentProgram (idx);               // host-sync + factory apply
+            presetName = pm.factoryName (idx);
+        }
+        else
+        {
+            auto names = pm.getUserPresetNames();
+            const auto name = names[idx - nf];
+            pm.loadUserPreset (name);
+            presetName = name;
+        }
         repaint();
+    }
+
+    void loadUserByName (const juce::String& name)
+    {
+        auto& pm = proc.getPresetManager();
+        const int pos = pm.getUserPresetNames().indexOf (name);
+        if (pos >= 0)
+            loadCombined (pm.getNumFactory() + pos);
+    }
+
+    void stepPreset (int dir) { loadCombined (presetIndex + dir); }
+
+    void openBrowser()
+    {
+        auto& pm = proc.getPresetManager();
+        presetTotal = pm.getNumFactory() + pm.getUserPresetNames().size();
+        const auto well = juce::Rectangle<int> (470, 14, 300, 28);
+        presetBrowser.show (this, localAreaToGlobal (well), presetIndex);
+    }
+
+    void openSaveDialog()
+    {
+        saveDialog = std::make_unique<juce::AlertWindow> (
+            "Save Preset", "Enter a name for this preset:", juce::MessageBoxIconType::NoIcon);
+        saveDialog->addTextEditor ("name", presetName, "Name:");
+        saveDialog->addButton ("Save",   1, juce::KeyPress (juce::KeyPress::returnKey));
+        saveDialog->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        saveDialog->setLookAndFeel (&lnf);
+        saveDialog->enterModalState (true, juce::ModalCallbackFunction::create (
+            [this] (int result)
+            {
+                if (result == 1)
+                {
+                    const auto name = saveDialog->getTextEditorContents ("name").trim();
+                    if (name.isNotEmpty() && proc.getPresetManager().saveUserPreset (name))
+                    {
+                        // New preset lives under the user section now; reflect it and
+                        // point the combined index at it (browser re-scans disk on open).
+                        loadUserByName (name);
+                    }
+                }
+                saveDialog->setLookAndFeel (nullptr);
+                saveDialog.reset();
+            }), false);
+    }
+
+    // Open the browser when the preset well is clicked.
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        const auto well = juce::Rectangle<int> (470, 14, 300, 28);
+        if (well.contains (e.getPosition()))
+            openBrowser();
     }
 
     juce::TextButton* makeToggle (const juce::String& id, const juce::String& text)
@@ -547,6 +634,13 @@ private:
     juce::TextButton* wtImport{};
     std::unique_ptr<juce::FileChooser> fileChooser;
     //==========================================================================
+
+    // ---- Preset browser (header) ----
+    juce::TextButton saveBtn;
+    zw::PresetBrowser presetBrowser { proc.getPresetManager(), lnf };
+    std::unique_ptr<juce::AlertWindow> saveDialog;
+    int presetIndex = 0;   // combined factory+user selection index
+    int presetTotal = 0;   // cached factory+user count for the well counter
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZWPanel)
 };

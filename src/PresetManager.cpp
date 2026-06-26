@@ -174,4 +174,13 @@ bool PresetManager::loadUserPreset (const juce::String& name)
     return false;
 }
 
+juce::StringArray PresetManager::getAllProgramNames() const
+{
+    juce::StringArray names;
+    for (int i = 0; i < getNumFactory(); ++i)
+        names.add (factoryName (i));
+    names.addArray (getUserPresetNames());
+    return names;
+}
+
 } // namespace zw

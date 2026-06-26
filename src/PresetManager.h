@@ -33,6 +33,9 @@ public:
     juce::StringArray getUserPresetNames() const;
     bool             loadUserPreset (const juce::String& name);
 
+    // ---- Combined enumeration (factory then user), for UI browsing/stepping ----
+    juce::StringArray getAllProgramNames() const;
+
     static constexpr const char* kWrapperType = "ZANDERSWAVE";
     static constexpr const char* kFileExt = ".zwpreset";
 

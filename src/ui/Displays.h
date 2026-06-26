@@ -36,6 +36,15 @@ public:
         : wt (s.getRawParameterValue (wtId)), warp (s.getRawParameterValue (warpId))
     {}
 
+    // Repoint the display at another oscillator's params (e.g. OSC A -> OSC B).
+    void setSource (const juce::AudioProcessorValueTreeState& s,
+                    const juce::String& wtId, const juce::String& warpId)
+    {
+        wt   = s.getRawParameterValue (wtId);
+        warp = s.getRawParameterValue (warpId);
+        repaint();
+    }
+
     void paint (juce::Graphics& g) override
     {
         auto r = getLocalBounds().toFloat().reduced (2.0f);

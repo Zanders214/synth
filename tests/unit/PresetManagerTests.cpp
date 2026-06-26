@@ -313,6 +313,61 @@ struct PresetManagerTests : juce::UnitTest
                 // Filesystem unavailable — skip silently.
             }
         }
+
+        beginTest ("getAllProgramNames lists factory then saved user preset, value round-trips");
+        {
+            zwtest::DummyProcessor proc;
+            ModMatrix matrix;
+            PresetManager pm (proc, proc.apvts, matrix);
+
+            // With no user presets, the combined list is exactly the factory bank.
+            const auto baseAll = pm.getAllProgramNames();
+            expectEquals (baseAll.size(), pm.getNumFactory(),
+                          "combined list with no user presets should equal factory count");
+            if (pm.getNumFactory() > 0)
+                expectEquals (baseAll[0], pm.factoryName (0),
+                              "factory presets should lead the combined list");
+
+            const juce::String name = "zwtest_all_"
+                                    + juce::String (juce::Time::getMillisecondCounterHiRes(), 3)
+                                          .replaceCharacter ('.', '_');
+            juce::File written;
+
+            try
+            {
+                // Stamp a distinctive filter cutoff and remember it.
+                zwtest::setParam (proc.apvts, id::filterCutoff, 1234.0f);
+                const float saved = zwtest::rawParam (proc.apvts, id::filterCutoff);
+
+                const bool didSave = pm.saveUserPreset (name);
+                written = pm.getUserDir().getChildFile (name + PresetManager::kFileExt);
+
+                if (didSave)
+                {
+                    // The combined list now includes the user preset, after the factory bank.
+                    const auto all = pm.getAllProgramNames();
+                    expectEquals (all.size(), pm.getNumFactory() + pm.getUserPresetNames().size(),
+                                  "combined list should be factory + user count");
+                    expect (all.contains (name), "saved user preset should appear in combined list");
+                    expect (all.indexOf (name) >= pm.getNumFactory(),
+                            "user presets should follow the factory bank in the combined list");
+
+                    // Mutate the cutoff, load the preset, confirm it round-trips.
+                    zwtest::setParam (proc.apvts, id::filterCutoff, 9000.0f);
+                    const bool didLoad = pm.loadUserPreset (name);
+                    expect (didLoad, "load of a just-saved preset should succeed");
+                    if (didLoad)
+                        expectWithinAbsoluteError (zwtest::rawParam (proc.apvts, id::filterCutoff),
+                                                   saved, 1.0e-3f, "filter cutoff should round-trip");
+                }
+            }
+            catch (...)
+            {
+                // Filesystem unavailable — treat as skipped, not failed.
+            }
+
+            try { if (written.existsAsFile()) written.deleteFile(); } catch (...) {}
+        }
     }
 };
 

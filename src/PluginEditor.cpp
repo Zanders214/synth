@@ -87,7 +87,7 @@ class ZWPanel : public juce::Component, private juce::Timer
 public:
     ZWPanel (ZandersWaveAudioProcessor& p, ZWLookAndFeel& lf)
         : proc (p), lnf (lf),
-          envMod ("ENV1 · AMP", lf), lfoMod ("LFO1", lf), oscMod ("OSC A", lf),
+          envMod ("ENV1 · AMP", lf), lfoMod ("LFO1", lf), oscMod ("OSC", lf),
           mixMod ("SOURCES", lf), filtMod ("FILTER", lf), outMod ("OUTPUT", lf),
           macroMod ("MACROS", lf), lowerMod ("WORKSPACE", lf),
           wtDisplay (p.apvts, id::osc ('A', "wtpos"), id::osc ('A', "warp")),
@@ -104,8 +104,6 @@ public:
 
         auto knob = [&] (const juce::String& id_, const juce::String& nm, juce::Colour arc = {})
         { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, true, arc)); addAndMakeVisible (k); return k; };
-        auto hslider = [&] (const juce::String& id_, const juce::String& nm)
-        { auto* k = knobs.add (std::make_unique<LabeledKnob> (s, id_, nm, lf, false)); addAndMakeVisible (k); return k; };
 
         // ENV1 ADSR
         envA = knob (id::env (1, "attack"), "ATK", theme::cyan);
@@ -118,13 +116,23 @@ public:
         lfoDepth = knob (id::lfo (1, "depth"),  "DEPTH", theme::pink);
         lfoRise  = knob (id::lfo (1, "rise"),   "RISE", theme::pink);
 
-        // OSC A
-        oscWt   = knob (id::osc ('A', "wtpos"),  "WT POS");
-        oscWarp = knob (id::osc ('A', "warp"),   "WARP");
-        oscUni  = knob (id::osc ('A', "unison"), "UNISON");
-        oscDet  = knob (id::osc ('A', "detune"), "DETUNE");
-        oscLvl  = hslider (id::osc ('A', "level"), "LEVEL");
-        oscPan  = hslider (id::osc ('A', "pan"),   "PAN");
+        // OSC A/B hero editor — source-switchable. The A/B selector repoints the
+        // WavetableDisplay + knob row at the chosen oscillator's APVTS params via
+        // setOscSource(), which rebuilds the slider attachments on each switch.
+        auto makeSel = [&] (const juce::String& text, char ab, bool on)
+        {
+            auto* b = toggles.add (std::make_unique<juce::TextButton> (text));
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (700);
+            b->setLookAndFeel (&lf);
+            b->setToggleState (on, juce::dontSendNotification);
+            b->onClick = [this, ab] { setOscSource (ab); };
+            addAndMakeVisible (b);
+            return b;
+        };
+        oscSelA = makeSel ("A", 'A', true);
+        oscSelB = makeSel ("B", 'B', false);
+        setOscSource ('A');
 
         // Source mixer (level sliders + enables)
         std::array<const char*, 4> srcIds  { "oscA_level", "oscB_level", "sub_level", "noise_level" };
@@ -268,6 +276,11 @@ public:
 
         // Centre: OSC editor + source mixer
         auto oscArea = centre.removeFromTop (380); oscMod.setBounds (oscArea);
+        // A/B source selector in the module title row (top-right), so it does not
+        // consume the body space used by the display + knob row.
+        { const int selW = 30, selH = 18, selY = oscArea.getY() + 10;
+          oscSelB->setBounds (oscArea.getRight() - 14 - selW,         selY, selW, selH);
+          oscSelA->setBounds (oscArea.getRight() - 14 - selW * 2 - 4, selY, selW, selH); }
         { auto b = oscMod.body(); wtDisplay.setBounds (b.removeFromTop (190)); b.removeFromTop (10);
           auto row = b.removeFromTop (90); const int kw = row.getWidth() / 4;
           oscWt->setBounds (row.removeFromLeft (kw)); oscWarp->setBounds (row.removeFromLeft (kw));
@@ -413,6 +426,29 @@ private:
         const auto well = juce::Rectangle<int> (470, 14, 300, 28);
         if (well.contains (e.getPosition()))
             openBrowser();
+    }
+
+    // Repoint the centre "hero" oscillator editor at OSC A or B. The knob row's
+    // APVTS attachments live inside the LabeledKnobs, so switching rebuilds the
+    // row (new attachments) and repoints the WavetableDisplay, then relayouts.
+    void setOscSource (char ab)
+    {
+        oscSource = ab;
+        oscKnobs.clear();                                  // drops old attachments
+        auto add = [&] (const juce::String& id_, const juce::String& nm, bool rotary)
+        {
+            auto* k = oscKnobs.add (std::make_unique<LabeledKnob> (proc.apvts, id_, nm, lnf, rotary));
+            addAndMakeVisible (k);
+            return k;
+        };
+        oscWt   = add (id::osc (ab, "wtpos"),  "WT POS", true);
+        oscWarp = add (id::osc (ab, "warp"),   "WARP",   true);
+        oscUni  = add (id::osc (ab, "unison"), "UNISON", true);
+        oscDet  = add (id::osc (ab, "detune"), "DETUNE", true);
+        oscLvl  = add (id::osc (ab, "level"),  "LEVEL",  false);
+        oscPan  = add (id::osc (ab, "pan"),    "PAN",    false);
+        wtDisplay.setSource (proc.apvts, id::osc (ab, "wtpos"), id::osc (ab, "warp"));
+        if (getWidth() > 0) resized();                     // relayout new knobs (skip during ctor)
     }
 
     juce::TextButton* makeToggle (const juce::String& id, const juce::String& text)
@@ -641,6 +677,17 @@ private:
     std::unique_ptr<juce::AlertWindow> saveDialog;
     int presetIndex = 0;   // combined factory+user selection index
     int presetTotal = 0;   // cached factory+user count for the well counter
+
+    //==========================================================================
+    // OSC A/B hero editor (source-switchable centre module) — see setOscSource(),
+    // the OSC construction block and its resized() layout. oscKnobs owns the live
+    // knob row so a switch can rebuild attachments; oscWt..oscPan point into it.
+    // The selectors live in `toggles` (lnf cleanup) but carry no APVTS attachment.
+    char oscSource = 'A';
+    juce::OwnedArray<LabeledKnob> oscKnobs;
+    juce::TextButton* oscSelA{};
+    juce::TextButton* oscSelB{};
+    //==========================================================================
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZWPanel)
 };

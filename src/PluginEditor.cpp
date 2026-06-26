@@ -88,6 +88,16 @@ private:
     juce::String title; juce::Font titleFont;
 };
 
+} // namespace zw
+
+// FxRackPanel reuses LabeledKnob (defined just above), so it is included here —
+// after that definition — rather than with the other headers at the top. The
+// namespace is closed/reopened so the panel lands in zw (not zw::zw).
+#include "ui/FxRackPanel.h"
+
+namespace zw
+{
+
 //==============================================================================
 // The fixed 1320x900 panel that holds the whole UI.
 class ZWPanel : public juce::Component, private juce::Timer
@@ -515,20 +525,10 @@ private:
             addAndMakeVisible (b);
         }
 
-        // FX page: 10 enable toggles
-        auto* fxPage = tabPages.add (std::make_unique<juce::Component>());
-        std::array<const char*, 10> fxSlots { "hyper","distort","flanger","phaser","chorus","delay","reverb","comp","eq","filter" };
-        std::array<const char*, 10> fxNames { "Hyper","Distort","Flanger","Phaser","Chorus","Delay","Reverb","Comp","EQ","Filter" };
-        for (int i = 0; i < 10; ++i)
-        {
-            auto* b = toggles.add (std::make_unique<juce::TextButton> (fxNames[i]));
-            b->setClickingTogglesState (true); b->setLookAndFeel (&lnf);
-            fxPage->addChildComponent (b); b->setVisible (true);
-            tAtt.add (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, id::fx (fxSlots[i], "enable"), *b));
-            fxToggles[i] = b;
-        }
-        fxPage->setInterceptsMouseClicks (false, true);
-        fxPageComp = fxPage; addChildComponent (fxPage);
+        // FX page: per-effect parameter editor (picker + enable + param knobs).
+        // Replaces the old bare row of 10 enable toggles; lays itself out.
+        auto* fxPage = tabPages.add (std::make_unique<zw::FxRackPanel> (proc.apvts, lnf));
+        fxRackPage = fxPage; addChildComponent (fxPage);
 
         // Matrix page: editable mod-matrix route list
         auto* mxPage = tabPages.add (std::make_unique<zw::ModMatrixPanel> (proc.getModMatrix(), lnf));
@@ -609,10 +609,7 @@ private:
     {
         if (tabPages.isEmpty()) return;
         auto area = tabPages[0]->getLocalBounds();
-        // FX toggles row
-        if (fxPageComp != nullptr)
-        { auto b = fxPageComp->getLocalBounds(); const int w = b.getWidth() / 10;
-          for (auto* t : fxToggles) t->setBounds (b.removeFromLeft (w).reduced (3, 30)); }
+        // FX page (FxRackPanel) lays itself out via its own resized().
         if (arpPageComp != nullptr)
         { auto b = arpPageComp->getLocalBounds(); auto top = b.removeFromTop (24);
           arpRun->setBounds (top.removeFromLeft (70)); top.removeFromLeft (8);
@@ -689,11 +686,9 @@ private:
     std::array<juce::TextButton*, 4> route{};
     juce::TextButton* arpRun{};
     std::array<juce::TextButton*, 16> arpStep{};
-    std::array<juce::TextButton*, 10> fxToggles{};
     juce::ComboBox* filterType{};
     juce::ComboBox* arpRate{};
     juce::ComboBox* arpMode{};
-    juce::Component* fxPageComp{};
     juce::Component* arpPageComp{};
     juce::Component* wtPageComp{};
     juce::Component* matrixPage{};
@@ -762,6 +757,11 @@ private:
     int presetTotal = 0;   // cached factory+user count for the well counter
 
     //==========================================================================
+    // FX rack editor (FX RACK lower tab) — see buildLowerTabs() fxPage block.
+    // Owned by tabPages; this is a non-owning back-pointer kept for symmetry
+    // with the other tab pages (matrixPage/arpPageComp/wtPageComp).
+    juce::Component* fxRackPage{};
+
     // OSC A/B hero editor (source-switchable centre module) — see setOscSource(),
     // the OSC construction block and its resized() layout. oscKnobs owns the live
     // knob row so a switch can rebuild attachments; oscWt..oscPan point into it.

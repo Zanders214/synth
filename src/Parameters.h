@@ -67,6 +67,13 @@ namespace id
 // Choice option lists (shared so DSP/UI index the same order the params use).
 namespace choices
 {
+    // Factory wavetable names, in the same order WavetableLibrary builds them.
+    // The trailing "User Import" entry selects the slot filled by .wav import.
+    inline juce::StringArray wavetable()   { return { "Basic Shapes", "PWM Square", "Additive Sweep",
+                                                      "FM Bell", "Formant Vocal", "Saw Stack",
+                                                      "Sync Saw", "Metallic", "Pulse Train",
+                                                      "Noise Band", "Sub Sines", "Bitcrush",
+                                                      "User Import" }; }
     inline juce::StringArray subWave()     { return { "Sine", "Tri", "Square" }; }
     inline juce::StringArray noiseType()   { return { "White", "Pink", "Vinyl" }; }
     inline juce::StringArray filterType()  { return { "LP24", "LP12", "HP24", "HP12", "BP12", "Notch" }; }

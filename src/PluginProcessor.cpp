@@ -11,11 +11,11 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
     paramRefs.prepare (apvts);
     fxChain.prepareParams (apvts);
     arp.prepareParams (apvts);
-    wavetable.generateBasicShapes (64);
+    // The wavetable library builds its full factory set in its own constructor.
 
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < kNumVoices; ++i)
-        synth.addVoice (new zw::ZWVoice (paramRefs, wavetable, modMatrix, currentBpm, lastNoteFreq));
+        synth.addVoice (new zw::ZWVoice (paramRefs, library, modMatrix, currentBpm, lastNoteFreq));
 
     // Collect on-screen-keyboard notes on the message thread (see processBlock).
     keyboardState.addListener (this);

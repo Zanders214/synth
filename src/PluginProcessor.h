@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include "dsp/Wavetable.h"
+#include "dsp/WavetableLibrary.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/Voice.h"
 #include "dsp/Arpeggiator.h"
@@ -50,6 +51,11 @@ public:
 
     zw::PresetManager& getPresetManager() { return presets; }
 
+    // Factory wavetable library + user-import slot. The editor's WAVETABLE tab
+    // imports .wav files into it (message thread); voices read it on the audio
+    // thread via getByIndex().
+    zw::WavetableLibrary& getWavetableLibrary() { return library; }
+
     // ---- Lightweight audio->UI taps (read on the message thread) ----
     static constexpr int kScopeSize = 1024;
     const float* getScopeRing() const noexcept { return scopeRing.data(); }
@@ -82,7 +88,7 @@ private:
     std::array<KeyEvent, (size_t) kKbFifoSize> kbEvents {};
     void pushKeyEvent (const KeyEvent&) noexcept;
 
-    zw::Wavetable      wavetable;
+    zw::WavetableLibrary library;
     zw::ParamRefs      paramRefs;
     zw::ModMatrix      modMatrix;
     zw::PresetManager  presets { *this, apvts, modMatrix };

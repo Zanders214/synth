@@ -17,6 +17,7 @@ namespace zw
 struct OscRefs
 {
     std::atomic<float> *enable {};
+    std::atomic<float> *wtselect {};
     std::atomic<float> *wtpos {};
     std::atomic<float> *warp {};
     std::atomic<float> *unison {};

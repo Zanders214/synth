@@ -4,13 +4,15 @@
 namespace zw
 {
 
-ZWVoice::ZWVoice (const ParamRefs& refs, const Wavetable& wt,
+ZWVoice::ZWVoice (const ParamRefs& refs, const WavetableLibrary& lib,
                   const ModMatrix& mm, const std::atomic<double>& bpm,
                   std::atomic<double>& lastNoteFreq)
-    : p (refs), table (wt), matrix (mm), bpmRef (bpm), lastNoteFreqRef (lastNoteFreq)
+    : p (refs), library (lib), matrix (mm), bpmRef (bpm), lastNoteFreqRef (lastNoteFreq)
 {
-    oscA.setWavetable (&table);
-    oscB.setWavetable (&table);
+    // Default each oscillator to its selected factory table; the per-block update
+    // re-points them whenever the wtselect parameter changes (a pointer swap).
+    oscA.setWavetable (library.getByIndex (0));
+    oscB.setWavetable (library.getByIndex (0));
 }
 
 bool ZWVoice::canPlaySound (juce::SynthesiserSound* s)
@@ -174,13 +176,20 @@ void ZWVoice::updateBlockParams (int numSamples)
     };
 
     if (aOn)
+    {
+        // Per-osc wavetable selection: pure pointer swap into the pre-built library.
+        oscA.setWavetable (library.getByIndex ((int) p.a.wtselect->load()));
         oscA.update ({ modded (ModDest::OscAWt), modded (ModDest::OscAWarp), (int) p.a.unison->load(),
                        modded (ModDest::OscADetune), modded (ModDest::OscALevel), modded (ModDest::OscAPan),
                        p.a.uniwidth->load(), freqFor (p.a) });
+    }
     if (bOn)
+    {
+        oscB.setWavetable (library.getByIndex ((int) p.b.wtselect->load()));
         oscB.update ({ modded (ModDest::OscBWt), modded (ModDest::OscBWarp), (int) p.b.unison->load(),
                        modded (ModDest::OscBDetune), modded (ModDest::OscBLevel), modded (ModDest::OscBPan),
                        p.b.uniwidth->load(), freqFor (p.b) });
+    }
 
     if (subOn)
         sub.update ((int) p.subWave->load(), (int) p.subOctave->load(),

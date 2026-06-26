@@ -510,6 +510,13 @@ private:
         arpMode = makeComboOn (arpPage, id::arpMode, choices::arpMode());
         for (int i = 0; i < 16; ++i)
             arpStep[i] = makeToggleOn (arpPage, id::arpStep (i + 1), juce::String (i + 1));
+        // Octaves (stepped 1..4), gate and swing: page-confined knobs (cf. wtFrame below).
+        arpOctaves = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpOctaves, "OCTAVES", lnf, true));
+        arpPage->addAndMakeVisible (arpOctaves);
+        arpGate    = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpGate,    "GATE",    lnf, true));
+        arpPage->addAndMakeVisible (arpGate);
+        arpSwing   = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::arpSwing,   "SWING",   lnf, true));
+        arpPage->addAndMakeVisible (arpSwing);
         arpPageComp = arpPage; addChildComponent (arpPage);
 
         // Wavetable page: per-osc table selectors + .wav import + frame slider.
@@ -580,7 +587,11 @@ private:
           arpRun->setBounds (top.removeFromLeft (70)); top.removeFromLeft (8);
           arpRate->setBounds (top.removeFromLeft (110)); top.removeFromLeft (8);
           arpMode->setBounds (top.removeFromLeft (130));
-          b.removeFromTop (10); auto grid = b.removeFromTop (60); const int sw = grid.getWidth() / 16;
+          b.removeFromTop (6); auto knobRow = b.removeFromTop (52);
+          arpOctaves->setBounds (knobRow.removeFromLeft (84)); knobRow.removeFromLeft (10);
+          arpGate->setBounds    (knobRow.removeFromLeft (84)); knobRow.removeFromLeft (10);
+          arpSwing->setBounds   (knobRow.removeFromLeft (84));
+          b.removeFromTop (8); auto grid = b.removeFromTop (32); const int sw = grid.getWidth() / 16;
           for (auto* st : arpStep) st->setBounds (grid.removeFromLeft (sw).reduced (2)); }
         if (wtPageComp != nullptr)
         {
@@ -669,6 +680,13 @@ private:
     juce::ComboBox*  wtSelectB{};
     juce::TextButton* wtImport{};
     std::unique_ptr<juce::FileChooser> fileChooser;
+    //==========================================================================
+
+    // ---- ARP octave/gate/swing controls (ARP-tab) — see buildLowerTabs() arp
+    // block and layoutPages(). Stepped octaves knob + gate/swing 0..1 knobs. ----
+    LabeledKnob* arpOctaves{};
+    LabeledKnob* arpGate{};
+    LabeledKnob* arpSwing{};
     //==========================================================================
 
     // ---- Preset browser (header) ----

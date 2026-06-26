@@ -307,8 +307,8 @@ public:
         lowerMod.setBounds (lower);
         { auto b = lowerMod.body();
           auto tabRow = b.removeFromTop (24);
-          const int tw = tabRow.getWidth() / 4;
-          for (int i = 0; i < 4; ++i) tabBtn[i]->setBounds (tabRow.removeFromLeft (tw).reduced (2, 0));
+          const int tw = tabRow.getWidth() / 5;
+          for (int i = 0; i < 5; ++i) tabBtn[i]->setBounds (tabRow.removeFromLeft (tw).reduced (2, 0));
           b.removeFromTop (6);
           for (auto* t : tabPages) t->setBounds (b);
           layoutPages(); }
@@ -437,8 +437,8 @@ private:
 
     void buildLowerTabs()
     {
-        std::array<const char*, 4> names { "FX RACK", "MOD MATRIX", "ARP", "WAVETABLE" };
-        for (int i = 0; i < 4; ++i)
+        std::array<const char*, 5> names { "FX RACK", "MOD MATRIX", "ARP", "WAVETABLE", "VOICE" };
+        for (int i = 0; i < 5; ++i)
         {
             auto* b = tabBtn.add (std::make_unique<juce::TextButton> (names[i]));
             b->setClickingTogglesState (true);
@@ -506,6 +506,18 @@ private:
         wtPage->addAndMakeVisible (wtFrame);
         wtPageComp = wtPage; addChildComponent (wtPage);
 
+        // Voice page: global voicing — mode + glide + polyphony + bend range + MPE.
+        auto* voPage = tabPages.add (std::make_unique<juce::Component>());
+        voiceMode  = makeComboOn (voPage, id::glideMono, choices::monoMode());
+        voiceMpe   = makeToggleOn (voPage, id::mpeEnable, "MPE");
+        voiceGlide = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::glideTime, "GLIDE", lnf));
+        voPage->addAndMakeVisible (voiceGlide);
+        voicePoly  = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::glidePoly, "VOICES", lnf));
+        voPage->addAndMakeVisible (voicePoly);
+        voiceBend  = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::bendRange, "BEND", lnf));
+        voPage->addAndMakeVisible (voiceBend);
+        voicePageComp = voPage; addChildComponent (voPage);
+
         tabBtn[0]->setToggleState (true, juce::dontSendNotification);
         showTab (0);
     }
@@ -555,6 +567,18 @@ private:
             if (wtImport  != nullptr) { wtImport->setBounds  (top.removeFromLeft (130)); }
             b.removeFromTop (10);
             wtFrame->setBounds (b.removeFromTop (60));
+        }
+        if (voicePageComp != nullptr)
+        {
+            auto b = voicePageComp->getLocalBounds();
+            auto top = b.removeFromTop (24);
+            voiceMode->setBounds (top.removeFromLeft (140)); top.removeFromLeft (8);
+            voiceMpe->setBounds  (top.removeFromLeft (70));
+            b.removeFromTop (10);
+            auto row = b.removeFromTop (60); const int kw = row.getWidth() / 6;
+            voiceGlide->setBounds (row.removeFromLeft (kw));
+            voicePoly->setBounds  (row.removeFromLeft (kw));
+            voiceBend->setBounds  (row.removeFromLeft (kw));
         }
         juce::ignoreUnused (area);
     }
@@ -619,6 +643,14 @@ private:
     juce::Component* arpPageComp{};
     juce::Component* wtPageComp{};
     juce::Component* matrixPage{};
+
+    // --- VOICE tab (global voicing controls) ---
+    juce::ComboBox*   voiceMode{};
+    juce::TextButton* voiceMpe{};
+    LabeledKnob*      voiceGlide{};
+    LabeledKnob*      voicePoly{};
+    LabeledKnob*      voiceBend{};
+    juce::Component*  voicePageComp{};
 
     juce::TextButton prevBtn;
     juce::TextButton nextBtn;

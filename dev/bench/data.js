@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782474175190,
+  "lastUpdate": 1782481095017,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -439,6 +439,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 224588.272,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aacb15e601be17237024862036ae1cc3edb7f2c0",
+          "message": "Apply Phaser stages and Chorus voices FX params (#22)\n\nPhaser \"stages\" (Int 2-12) and Chorus \"voices\" (Int 1-4) were defined,\nexposed in the UI, and cached in FxChain (ph.p3 / ch.p3) but never\napplied -- the old juce::dsp::Phaser/Chorus wrappers had no way to accept\na stage/voice count, so the sliders were dead no-ops.\n\nReplace both wrappers in Effects.h with small, RT-safe, count-aware DSP:\n- Phaser: a custom N-stage first-order all-pass cascade with feedback and\n  wet/dry mix, modulated by one LFO. Per-stage state is sized to the max\n  (12 stages x 2 channels); only the active N stages run.\n- Chorus: a custom multi-voice modulated-delay (N summed delay taps off a\n  single pre-allocated line via DelayLine::popSample, advancing the read\n  pointer once per sample), normalised and dry/wet blended. Per-voice LFO\n  state is sized to the max (4 voices).\n\nRoute (int) ph.p3 / ch.p3 through the two FxChain apply lines, mirroring\nthe existing (int) casts used for hyper voices / distort mode / filter type.\n\nBehavior change: these two params now affect the sound. Because the\nfixed-topology juce::dsp effects can't take a variable count, default\noutput (6 stages / 2 voices) is not bit-identical to before, but keeps the\nsame default count and musical role.\n\nExtends FxChainTests with a case asserting that changing stages/voices\nmeasurably changes the processed output while the default count still\nalters the signal.\n\n\nClaude-Session: https://claude.ai/code/session_01TEsrAbjJE9EoW4fQaK4AjZ\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-26T16:35:49+03:00",
+          "tree_id": "055ca8df2094a657e12077773ceeb7f2f5c3ac59",
+          "url": "https://github.com/Zanders214/synth/commit/aacb15e601be17237024862036ae1cc3edb7f2c0"
+        },
+        "date": 1782481094245,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 219145.789,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 2.054,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 81136.015,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 136594.563,
             "unit": "ns/block"
           }
         ]

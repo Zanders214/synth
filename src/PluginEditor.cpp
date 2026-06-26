@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "ui/Theme.h"
 #include "ui/Displays.h"
+#include "ui/ModMatrixPanel.h"
 #include "Parameters.h"
 #include <array>
 
@@ -375,8 +376,8 @@ private:
         fxPage->setInterceptsMouseClicks (false, true);
         fxPageComp = fxPage; addChildComponent (fxPage);
 
-        // Matrix page: route list (read-only label)
-        auto* mxPage = tabPages.add (std::make_unique<RouteList> (proc.getPresetManager())); // placeholder using mod matrix via processor
+        // Matrix page: editable mod-matrix route list
+        auto* mxPage = tabPages.add (std::make_unique<zw::ModMatrixPanel> (proc.getModMatrix(), lnf));
         matrixPage = mxPage; addChildComponent (mxPage);
 
         // Arp page: run + rate + mode + 16 steps
@@ -438,19 +439,6 @@ private:
             wtFrame->setBounds (wtPageComp->getLocalBounds().removeFromTop (60));
         juce::ignoreUnused (area);
     }
-
-    // Read-only matrix route list.
-    struct RouteList : public juce::Component
-    {
-        explicit RouteList (PresetManager&) {}
-        void paint (juce::Graphics& g) override
-        {
-            g.setColour (theme::tMuted);
-            g.setFont (juce::Font (juce::FontOptions (12.0f)));
-            g.drawText ("Mod matrix routing (drag-to-assign UI coming next increment)",
-                        getLocalBounds(), juce::Justification::centred, false);
-        }
-    };
 
     ZandersWaveAudioProcessor& proc;
     ZWLookAndFeel& lnf;

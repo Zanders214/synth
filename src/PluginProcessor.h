@@ -49,6 +49,7 @@ public:
     void changeProgramName (int, const juce::String&) override { /* no-op: factory presets are read-only */ }
 
     zw::PresetManager& getPresetManager() { return presets; }
+    zw::ModMatrix&     getModMatrix()     noexcept { return modMatrix; }
 
     // ---- Lightweight audio->UI taps (read on the message thread) ----
     static constexpr int kScopeSize = 1024;

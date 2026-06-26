@@ -55,6 +55,10 @@ public:
     void addRoute (ModSource s, ModDest d, float amount);
     void removeRoute (int index);
 
+    // Replace the whole route list in one atomic publish (UI bulk edits). Thin
+    // wrapper over the lock-free double-buffer path; no half-written state.
+    void setRoutes (const std::vector<ModRoute>& routes) { publish (routes); }
+
     std::vector<ModRoute> getRoutes() const;      // snapshot (UI/serialisation)
     int  size() const noexcept { return buffers[(size_t) activeIdx.load (std::memory_order_acquire)].count; }
 

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782486181653,
+  "lastUpdate": 1782486981394,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -659,6 +659,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 238314.293,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f0a07bc26c08f9d87b16fb8f30709ee6d8e2973d",
+          "message": "Add VOICE tab for global voicing controls (#26)\n\n* Add VOICE tab for global voicing controls\n\nExpose the global voicing parameters (mono/legato mode, glide, polyphony,\npitch-bend range, MPE) that were defined and DSP-wired but had no UI.\n\nAdds a 5th lower tab \"VOICE\" alongside FX RACK / MOD MATRIX / ARP /\nWAVETABLE, built inline like the existing ARP/WAVETABLE pages and reusing\nLabeledKnob / makeComboOn / makeToggleOn. Controls bind to the real APVTS\nparams via attachments only:\n  - mode combo  -> global_monomode (Poly/Mono/Legato)\n  - GLIDE knob  -> global_glide\n  - VOICES knob -> global_polyphony\n  - BEND knob   -> global_bendrange\n  - MPE toggle  -> global_mpe\n\nEdits are confined to src/PluginEditor.cpp: tab count 4->5 in\nbuildLowerTabs() and resized(), an inline VOICE page, a layoutPages()\nblock, and a commented member block. No parameter atomics are written;\nstyling comes from ZWLookAndFeel/theme.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVxSnnDd1NKeYkHbaoR2BF\n\n* Ignore local JUCE source and dev snapshot PNGs\n\nKeep sandbox build/verification artifacts out of the repo: the local JUCE\ntree fetched via FETCHCONTENT_SOURCE_DIR_JUCE and the ui_snapshot output\nPNGs (out.png / voice_tab.png).\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVxSnnDd1NKeYkHbaoR2BF\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-26T17:12:45+02:00",
+          "tree_id": "f1ee6689b15db19dbc9d6291c9a6855346cf96a5",
+          "url": "https://github.com/Zanders214/synth/commit/f0a07bc26c08f9d87b16fb8f30709ee6d8e2973d"
+        },
+        "date": 1782486980468,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 383929.053,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.599,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143498.541,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 238360.268,
             "unit": "ns/block"
           }
         ]

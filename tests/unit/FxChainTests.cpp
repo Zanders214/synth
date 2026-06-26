@@ -286,6 +286,71 @@ struct FxChainTests : juce::UnitTest
         }
 
         // ---------------------------------------------------------------------
+        // Phaser "stages" (Int 2-12) and Chorus "voices" (Int 1-4) used to be
+        // cached but never applied (the old juce::dsp wrappers had nowhere to
+        // put the count), so their sliders were dead. These cases pin that the
+        // count now reaches the DSP: the same dry signal through the same slot
+        // at two different counts must produce measurably different output, and
+        // the default count must still alter the signal.
+        beginTest ("phaser stages / chorus voices are wired and change the output");
+        {
+            juce::dsp::ProcessSpec spec { sr, (juce::uint32) bs, (juce::uint32) 2 };
+
+            // Build the slot at a given count param and return its output after a
+            // few passes (so modulation / feedback state accrues), starting from
+            // the same dry signal each time.
+            auto render = [&] (const char* slot, const char* countId, float countNorm)
+            {
+                DummyProcessor proc;
+                auto& s = proc.apvts;
+                disableAll (s);
+                setParam (s, zw::id::fx (slot, "enable"), 1.0f);
+                setParam (s, zw::id::fx (slot, "rate"),   0.4f);
+                setParam (s, zw::id::fx (slot, "depth"),  0.9f);
+                setParam (s, zw::id::fx (slot, "mix"),    1.0f);
+                setParam (s, zw::id::fx (slot, countId),  countNorm);
+
+                zw::FxChain chain;
+                chain.prepareParams (s);
+                chain.prepare (spec);
+
+                juce::AudioBuffer<float> buf (2, bs);
+                fillTestSignal (buf, sr);
+                for (int b = 0; b < 3; ++b)
+                {
+                    juce::dsp::AudioBlock<float> block (buf);
+                    chain.process (block);
+                }
+                return buf;
+            };
+
+            juce::AudioBuffer<float> dry (2, bs);
+            fillTestSignal (dry, sr);
+
+            // Phaser: stages norm 0.0 -> 2 stages, 1.0 -> 12 stages (default 6).
+            auto phLo  = render ("phaser", "stages", 0.0f);   // 2 stages
+            auto phHi  = render ("phaser", "stages", 1.0f);   // 12 stages
+            auto phDef = render ("phaser", "stages", 0.4f);   // 6 stages (default)
+            expect (allFinite (phLo) && allFinite (phHi) && allFinite (phDef),
+                    "phaser output must be finite at every stage count");
+            expectGreaterThan (diff (phLo, phHi), 1.0e-3,
+                    "changing phaser stages must change the output");
+            expectGreaterThan (diff (dry, phDef), 1.0e-3,
+                    "phaser at default stages must still alter the signal");
+
+            // Chorus: voices norm 0.0 -> 1 voice, 1.0 -> 4 voices (default 2).
+            auto chLo  = render ("chorus", "voices", 0.0f);   // 1 voice
+            auto chHi  = render ("chorus", "voices", 1.0f);   // 4 voices
+            auto chDef = render ("chorus", "voices", 1.0f / 3.0f);  // 2 voices (default)
+            expect (allFinite (chLo) && allFinite (chHi) && allFinite (chDef),
+                    "chorus output must be finite at every voice count");
+            expectGreaterThan (diff (chLo, chHi), 1.0e-3,
+                    "changing chorus voices must change the output");
+            expectGreaterThan (diff (dry, chDef), 1.0e-3,
+                    "chorus at default voices must still alter the signal");
+        }
+
+        // ---------------------------------------------------------------------
         beginTest ("distortion exercises all three shaping modes");
         {
             juce::dsp::ProcessSpec spec { sr, (juce::uint32) bs, (juce::uint32) 2 };

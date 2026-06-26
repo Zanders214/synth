@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782470508262,
+  "lastUpdate": 1782474175190,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -395,6 +395,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 224697.335,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "noreply@anthropic.com",
+            "name": "Claude",
+            "username": "claude"
+          },
+          "committer": {
+            "email": "noreply@anthropic.com",
+            "name": "Claude",
+            "username": "claude"
+          },
+          "distinct": true,
+          "id": "b98d525fa99d2aae8eb3fe8513d73475b46e4727",
+          "message": "merge claude/preset-browser",
+          "timestamp": "2026-06-26T11:36:31Z",
+          "tree_id": "33a85ad558ebc25972426d68aa809ebe5e3dc9ac",
+          "url": "https://github.com/Zanders214/synth/commit/b98d525fa99d2aae8eb3fe8513d73475b46e4727"
+        },
+        "date": 1782474174412,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 369424.234,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.463,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143096.356,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 224588.272,
             "unit": "ns/block"
           }
         ]

@@ -72,6 +72,7 @@ namespace
     {
         const juce::String name = juce::String ("OSC ") + ab + " ";
         addBool   (l, id::osc (ab, "enable"),    name + "Enable",    d.en);
+        addChoice (l, id::osc (ab, "wtselect"),  name + "Wavetable", choices::wavetable(), 0);
         addPct    (l, id::osc (ab, "wtpos"),     name + "WT Pos",    d.wt);
         addPct    (l, id::osc (ab, "warp"),      name + "Warp",      d.warp);
         addChoice (l, id::osc (ab, "warpmode"),  name + "Warp Mode",

@@ -6,6 +6,7 @@
 
 #include "Parameters.h"
 #include "dsp/Wavetable.h"
+#include "dsp/WavetableLibrary.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/ModMatrix.h"
 #include "dsp/Voice.h"
@@ -51,8 +52,7 @@ int main()
     zw::ParamRefs refs;
     refs.prepare (proc.apvts);
 
-    zw::Wavetable wt;
-    wt.generateBasicShapes (64);
+    zw::WavetableLibrary library;         // factory tables (default selection = 0)
 
     zw::ModMatrix matrix;                 // default routes
     std::atomic<double> bpm { 120.0 };
@@ -64,7 +64,7 @@ int main()
     juce::Synthesiser synth;
     synth.addSound (new zw::ZWSound());
     for (int i = 0; i < 16; ++i)
-        synth.addVoice (new zw::ZWVoice (refs, wt, matrix, bpm, lastNoteFreq));
+        synth.addVoice (new zw::ZWVoice (refs, library, matrix, bpm, lastNoteFreq));
     synth.setCurrentPlaybackSampleRate (sr);
 
     juce::AudioBuffer<float> buffer (2, bs);

@@ -6,6 +6,7 @@ namespace zw
 static void prepOsc (OscRefs& r, const juce::AudioProcessorValueTreeState& s, char ab)
 {
     r.enable    = s.getRawParameterValue (id::osc (ab, "enable"));
+    r.wtselect  = s.getRawParameterValue (id::osc (ab, "wtselect"));
     r.wtpos     = s.getRawParameterValue (id::osc (ab, "wtpos"));
     r.warp      = s.getRawParameterValue (id::osc (ab, "warp"));
     r.unison    = s.getRawParameterValue (id::osc (ab, "unison"));

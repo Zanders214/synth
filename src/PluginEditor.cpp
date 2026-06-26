@@ -388,8 +388,32 @@ private:
             arpStep[i] = makeToggleOn (arpPage, id::arpStep (i + 1), juce::String (i + 1));
         arpPageComp = arpPage; addChildComponent (arpPage);
 
-        // Wavetable page: frame slider (OSC A WT)
+        // Wavetable page: per-osc table selectors + .wav import + frame slider.
         auto* wtPage = tabPages.add (std::make_unique<juce::Component>());
+        wtSelectA = makeComboOn (wtPage, id::osc ('A', "wtselect"), choices::wavetable());
+        wtSelectB = makeComboOn (wtPage, id::osc ('B', "wtselect"), choices::wavetable());
+        wtImport  = toggles.add (std::make_unique<juce::TextButton> ("IMPORT WAV..."));
+        wtImport->setLookAndFeel (&lnf);
+        wtPage->addAndMakeVisible (wtImport);
+        wtImport->onClick = [this]
+        {
+            // Import on the message thread: read + band-limit the .wav into the
+            // library's user slot, then point both selectors at "User Import".
+            fileChooser = std::make_unique<juce::FileChooser> ("Import wavetable (.wav)",
+                                                               juce::File{}, "*.wav");
+            const auto flags = juce::FileBrowserComponent::openMode
+                             | juce::FileBrowserComponent::canSelectFiles;
+            fileChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
+            {
+                const auto file = fc.getResult();
+                if (file.existsAsFile() && proc.getWavetableLibrary().loadFromWav (file))
+                {
+                    const int userIdx = proc.getWavetableLibrary().getUserIndex() + 1; // 1-based combo id
+                    if (wtSelectA != nullptr) wtSelectA->setSelectedId (userIdx);
+                    if (wtSelectB != nullptr) wtSelectB->setSelectedId (userIdx);
+                }
+            });
+        };
         wtFrame = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::osc ('A', "wtpos"), "FRAME POSITION", lnf, false));
         wtPage->addAndMakeVisible (wtFrame);
         wtPageComp = wtPage; addChildComponent (wtPage);
@@ -435,7 +459,15 @@ private:
           b.removeFromTop (10); auto grid = b.removeFromTop (60); const int sw = grid.getWidth() / 16;
           for (auto* st : arpStep) st->setBounds (grid.removeFromLeft (sw).reduced (2)); }
         if (wtPageComp != nullptr)
-            wtFrame->setBounds (wtPageComp->getLocalBounds().removeFromTop (60));
+        {
+            auto b = wtPageComp->getLocalBounds();
+            auto top = b.removeFromTop (24);
+            if (wtSelectA != nullptr) { wtSelectA->setBounds (top.removeFromLeft (160)); top.removeFromLeft (8); }
+            if (wtSelectB != nullptr) { wtSelectB->setBounds (top.removeFromLeft (160)); top.removeFromLeft (8); }
+            if (wtImport  != nullptr) { wtImport->setBounds  (top.removeFromLeft (130)); }
+            b.removeFromTop (10);
+            wtFrame->setBounds (b.removeFromTop (60));
+        }
         juce::ignoreUnused (area);
     }
 
@@ -518,6 +550,15 @@ private:
     juce::TooltipWindow tooltip { this, 600 };
     juce::String presetName { "Init" };
     int modBarY = 620;
+
+    //==========================================================================
+    // Wavetable library controls (WAVETABLE lower tab) — see buildLowerTabs()
+    // wtPage block and layoutPages(). Per-osc table selectors + .wav importer.
+    juce::ComboBox*  wtSelectA{};
+    juce::ComboBox*  wtSelectB{};
+    juce::TextButton* wtImport{};
+    std::unique_ptr<juce::FileChooser> fileChooser;
+    //==========================================================================
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZWPanel)
 };

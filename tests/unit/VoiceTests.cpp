@@ -10,6 +10,7 @@
 
 #include "Parameters.h"
 #include "dsp/Wavetable.h"
+#include "dsp/WavetableLibrary.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/ModMatrix.h"
 #include "dsp/Voice.h"
@@ -27,7 +28,7 @@ struct VoiceRig
 {
     zwtest::DummyProcessor proc;
     zw::ParamRefs          refs;
-    zw::Wavetable          wt;
+    zw::WavetableLibrary   library;
     zw::ModMatrix          matrix;
     std::atomic<double>    bpm { 120.0 };
     std::atomic<double>    lastNoteFreq { 440.0 };
@@ -36,11 +37,10 @@ struct VoiceRig
     explicit VoiceRig (double sampleRate = 48000.0, int numVoices = 8)
     {
         refs.prepare (proc.apvts);
-        wt.generateBasicShapes (64);
 
         synth.addSound (new zw::ZWSound());
         for (int i = 0; i < numVoices; ++i)
-            synth.addVoice (new zw::ZWVoice (refs, wt, matrix, bpm, lastNoteFreq));
+            synth.addVoice (new zw::ZWVoice (refs, library, matrix, bpm, lastNoteFreq));
         synth.setCurrentPlaybackSampleRate (sampleRate);
     }
 

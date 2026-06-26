@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "Wavetable.h"
+#include "WavetableLibrary.h"
 #include "WavetableOscillator.h"
 #include "BasicSources.h"
 #include "MultimodeFilter.h"
@@ -31,7 +32,7 @@ struct ZWSound : public juce::SynthesiserSound
 class ZWVoice : public juce::SynthesiserVoice
 {
 public:
-    ZWVoice (const ParamRefs& refs, const Wavetable& wt,
+    ZWVoice (const ParamRefs& refs, const WavetableLibrary& library,
              const ModMatrix& matrix, const std::atomic<double>& bpm,
              std::atomic<double>& lastNoteFreq);
 
@@ -58,7 +59,7 @@ private:
     }
 
     const ParamRefs& p;
-    const Wavetable& table;
+    const WavetableLibrary& library;   // OSC A/B each pick a table from here (per block)
     const ModMatrix& matrix;
     const std::atomic<double>& bpmRef;
     std::atomic<double>& lastNoteFreqRef;

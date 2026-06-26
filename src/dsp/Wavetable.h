@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include <vector>
 #include <cmath>
+#include <functional>
 
 namespace zw
 {
@@ -24,6 +25,20 @@ public:
     // Procedural placeholder library: a sine -> saw morph across frames. Real
     // .zwt libraries replace this in M6.
     void generateBasicShapes (int numFrames = 64);
+
+    // Generic band-limited builder. Each entry of `frames` is one full-band
+    // single cycle (resampled to kFrameSize if it differs). Every frame is
+    // forward-FFT'd, then each mip level keeps only the harmonics it is allowed
+    // and is inverse-FFT'd, with per-frame peak normalisation — the same mip
+    // pipeline generateBasicShapes uses, but sourced from arbitrary data. Used
+    // for the analytic factory tables and for imported .wav frames.
+    void buildFromFrames (const std::vector<std::vector<float>>& frames);
+
+    // Convenience builder for analytic tables: samples `fn` at kFrameSize phase
+    // points per frame (fn returns a value in roughly [-1, 1]) and feeds the
+    // resulting cycles to buildFromFrames(). Message-thread only (allocates).
+    void buildFromGenerator (int numFrames,
+                             const std::function<float (int frame, int numFrames, float phase01)>& fn);
 
     int getNumFrames() const noexcept { return numFrames; }
     bool isEmpty()     const noexcept { return numFrames == 0; }
@@ -63,6 +78,10 @@ private:
     int numFrames = 0;
 
     int mipForFreq (double freqHz, double sampleRate) const noexcept;
+
+    // Allocate the halving-harmonic mip hierarchy (full band down to 1 harmonic)
+    // for the current numFrames. Shared by generateBasicShapes and buildFromFrames.
+    void allocateMips();
 };
 
 } // namespace zw

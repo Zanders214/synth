@@ -99,6 +99,7 @@ target_sources(render_smoke PRIVATE
     src/Parameters.cpp
     src/PresetManager.cpp
     src/dsp/Wavetable.cpp
+    src/dsp/WavetableLibrary.cpp
     src/dsp/ParamRefs.cpp
     src/dsp/ModMatrix.cpp
     src/dsp/Arpeggiator.cpp
@@ -145,6 +146,7 @@ target_sources(unit_tests PRIVATE
     src/Parameters.cpp
     src/PresetManager.cpp
     src/dsp/Wavetable.cpp
+    src/dsp/WavetableLibrary.cpp
     src/dsp/ParamRefs.cpp
     src/dsp/ModMatrix.cpp
     src/dsp/Arpeggiator.cpp
@@ -213,6 +215,7 @@ if(ZW_BUILD_BENCH)
         src/Parameters.cpp
         src/PresetManager.cpp
         src/dsp/Wavetable.cpp
+        src/dsp/WavetableLibrary.cpp
         src/dsp/ParamRefs.cpp
         src/dsp/ModMatrix.cpp
         src/dsp/Voice.cpp

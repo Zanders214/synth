@@ -7,6 +7,7 @@
 #include "dsp/WavetableLibrary.h"
 #include "dsp/ParamRefs.h"
 #include "dsp/Voice.h"
+#include "dsp/ZWSynthesiser.h"
 #include "dsp/Arpeggiator.h"
 #include "dsp/fx/FxChain.h"
 #include "PresetManager.h"
@@ -73,7 +74,9 @@ public:
     juce::MidiKeyboardState keyboardState;   // drives the on-screen keyboard
 
 private:
-    static constexpr int kNumVoices = 16;
+    // Allocate the maximum selectable polyphony; the active count is capped per
+    // block by ZWSynthesiser from the global_polyphony parameter (default 16).
+    static constexpr int kMaxVoices = 32;
 
     // ---- Lock-free on-screen-keyboard bridge (message thread -> audio thread) --
     // MidiKeyboardState::processNextMidiBuffer locks a CriticalSection every block,
@@ -97,7 +100,7 @@ private:
     zw::Arpeggiator    arp;
     std::atomic<double> currentBpm { 120.0 };
     std::atomic<double> lastNoteFreq { 440.0 };
-    juce::Synthesiser  synth;
+    zw::ZWSynthesiser  synth;
     zw::FxChain        fxChain;
     juce::dsp::Gain<float> masterGain;
 

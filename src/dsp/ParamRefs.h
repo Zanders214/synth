@@ -64,6 +64,8 @@ struct ParamRefs
     std::atomic<float> *masterOut {};
     std::atomic<float> *bendRange {};
     std::atomic<float> *glideTime {};
+    std::atomic<float> *monoMode {};    // global_monomode: 0=Poly, 1=Mono, 2=Legato
+    std::atomic<float> *polyphony {};   // global_polyphony: active voice cap 1..32
 
     // ---- Modulation sources -------------------------------------------------
     std::atomic<float> *env2A {};

@@ -112,6 +112,18 @@ void ZWVoice::pitchWheelMoved (int newValue)
     pitchBendSemis = norm * range;
 }
 
+void ZWVoice::changeNote (int newMidiNote)
+{
+    // Legato: change the destination pitch but do NOT retrigger envelopes, oscillator
+    // phase, or LFOs. updateBlockParams() then glides noteFreq toward this new target
+    // (instantly if glide is 0) while the amp envelope keeps sustaining. Mirrors the
+    // pitch/note-tracking math in startNote().
+    midiNote   = newMidiNote;
+    noteNorm   = juce::jlimit (-1.0f, 1.0f, static_cast<float> (midiNote - 60) / 48.0f);
+    targetFreq = 440.0 * std::pow (2.0, (static_cast<float> (midiNote - 69) + pitchBendSemis) / 12.0);
+    lastNoteFreqRef.store (targetFreq);
+}
+
 void ZWVoice::updateBlockParams (int numSamples)
 {
     targetFreq = 440.0 * std::pow (2.0, (static_cast<float> (midiNote - 69) + pitchBendSemis) / 12.0);

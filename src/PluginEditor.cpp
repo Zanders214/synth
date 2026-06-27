@@ -263,9 +263,11 @@ public:
         g.drawText (juce::String (presetIndex + 1) + " / " + juce::String (juce::jmax (1, presetTotal)),
                     well.reduced (10, 0), juce::Justification::centredRight, false);
 
-        // Voice readout
+        // Voice readout: active voice count + the current mono/poly mode.
         g.setColour (theme::tMuted); g.setFont (lnf.monoFont (10.0f));
-        g.drawText (juce::String (proc.getActiveVoiceCount()) + " VOICES   MPE · 16",
+        const int modeIdx = (int) proc.apvts.getRawParameterValue (id::glideMono)->load();
+        const char* modeStr = modeIdx == 1 ? "MONO" : (modeIdx == 2 ? "LEGATO" : "POLY");
+        g.drawText (juce::String (proc.getActiveVoiceCount()) + " VOICES · " + modeStr,
                     getWidth() - 320, 14, 200, 28, juce::Justification::centredRight, false);
 
         // Mod-sources bar label
@@ -586,6 +588,10 @@ private:
         auto* voPage = tabPages.add (std::make_unique<juce::Component>());
         voiceMode  = makeComboOn (voPage, id::glideMono, choices::monoMode());
         voiceMpe   = makeToggleOn (voPage, id::mpeEnable, "MPE");
+        // MPE per-note expression isn't wired into the voice engine yet, so the toggle
+        // is shown disabled rather than left as a control that silently does nothing.
+        voiceMpe->setEnabled (false);
+        voiceMpe->setTooltip ("MPE: planned (not yet wired into the voice engine)");
         voiceGlide = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::glideTime, "GLIDE", lnf));
         voPage->addAndMakeVisible (voiceGlide);
         voicePoly  = knobs.add (std::make_unique<LabeledKnob> (proc.apvts, id::glidePoly, "VOICES", lnf));

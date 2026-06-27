@@ -14,8 +14,10 @@ ZandersWaveAudioProcessor::ZandersWaveAudioProcessor()
     // The wavetable library builds its full factory set in its own constructor.
 
     synth.addSound (new zw::ZWSound());
-    for (int i = 0; i < kNumVoices; ++i)
+    for (int i = 0; i < kMaxVoices; ++i)
         synth.addVoice (new zw::ZWVoice (paramRefs, library, modMatrix, currentBpm, lastNoteFreq));
+    synth.setParamRefs (paramRefs);          // monoMode + polyphony, read on the audio thread
+    synth.setNoteStealingEnabled (true);     // steal within the active-polyphony window
 
     // Collect on-screen-keyboard notes on the message thread (see processBlock).
     keyboardState.addListener (this);

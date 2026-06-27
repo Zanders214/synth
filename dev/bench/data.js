@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782570650237,
+  "lastUpdate": 1782579593751,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -747,6 +747,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 241500.117,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8dd99b01d03bfeef834915203c2cd84bb64d259",
+          "message": "Wire Mono/Legato and dynamic Polyphony into the voice engine (#28)\n\nThe VOICE tab (PR #26) exposed global_monomode, global_polyphony and global_mpe\nbut the DSP never read them, so Mono/Legato, voice count and MPE silently did\nnothing. This wires the first two into the engine and stops the MPE toggle from\nbeing a third dead control. Completes the M5 global/voicing deliverable.\n\n- New dsp/ZWSynthesiser.h: a juce::Synthesiser subclass that reads monoMode/\n  polyphony from ParamRefs. Mono/Legato drive a single voice with last-note\n  priority (Legato retargets pitch via ZWVoice::changeNote WITHOUT retriggering\n  the amp envelope; Mono retriggers); findFreeVoice() bounds allocation/stealing\n  to the first N voices to cap polyphony (1..32). Overrides are allocation/lock\n  free (fixed-size held-note stack; only the base class's existing recursive lock).\n- ZWVoice::changeNote(): retarget the destination pitch + note-tracking without\n  retriggering envelopes/oscillator phase, so the existing per-block glide slurs\n  between legato notes (instant when glide is 0).\n- ParamRefs: cache monoMode (global_monomode) and polyphony (global_polyphony).\n- PluginProcessor: use ZWSynthesiser, allocate the 32-voice max pool (capped per\n  block from the param; default 16 keeps current behaviour), enable note stealing.\n- PluginEditor: disable the MPE toggle with a \"planned\" tooltip (per-note MPE is a\n  separate, larger effort), and show the real POLY/MONO/LEGATO mode in the header\n  readout instead of a hardcoded \"MPE - 16\".\n- tests/unit/VoiceModeTests.cpp: polyphony cap, mono last-note priority + retrigger,\n  and legato no-retrigger (the voice keeps its original note-on while pitch retargets).\n\nMPE per-note expression remains a follow-on (needs a juce::MPESynthesiser-class\nmigration). Compile + unit-test runs happen in CI (JUCE isn't fetchable in the\ndev sandbox).\n\n\nClaude-Session: https://claude.ai/code/session_01UFGHnVLTGNSktPR2KHa92s\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-27T18:56:24+02:00",
+          "tree_id": "c8666b0581290de9d333f5abd6a4c772951e5931",
+          "url": "https://github.com/Zanders214/synth/commit/d8dd99b01d03bfeef834915203c2cd84bb64d259"
+        },
+        "date": 1782579592848,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 383372.605,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.594,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 143464.043,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 238464.611,
             "unit": "ns/block"
           }
         ]

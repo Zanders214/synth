@@ -40,6 +40,9 @@ public:
     void startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound*, int currentPitchWheelPosition) override;
     void stopNote (float velocity, bool allowTailOff) override;
     void pitchWheelMoved (int newPitchWheelValue) override;
+    // Retarget the sounding note WITHOUT retriggering envelopes/oscillator phase (legato):
+    // the per-block glide slides the pitch while the amp envelope keeps sustaining.
+    void changeNote (int newMidiNote);
     void controllerMoved (int, int) override { /* No MIDI CC handling: modulation is driven by the mod matrix. */ }
     void setCurrentPlaybackSampleRate (double newRate) override;
     void renderNextBlock (juce::AudioBuffer<float>&, int startSample, int numSamples) ZW_RT_NONBLOCKING override;

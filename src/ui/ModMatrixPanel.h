@@ -92,7 +92,7 @@ private:
     // owning panel so the row stays a dumb view.
     struct Row : public juce::Component
     {
-        Row (ZWLookAndFeel& lnfIn)
+        explicit Row (ZWLookAndFeel& lnfIn)
         {
             source.addItemList (sourceLabels(), 1);
             dest.addItemList (destLabels(), 1);
@@ -134,7 +134,8 @@ private:
             amount.setBounds (r);
         }
 
-        juce::ComboBox source, dest;
+        juce::ComboBox source;
+        juce::ComboBox dest;
         juce::Slider   amount;
         juce::TextButton del;
         juce::Rectangle<int> arrowArea;
@@ -151,8 +152,7 @@ private:
 
     void deleteRoute (int index)
     {
-        auto routes = matrix.getRoutes();
-        if (index >= 0 && index < (int) routes.size())
+        if (auto routes = matrix.getRoutes(); index >= 0 && index < (int) routes.size())
         {
             routes.erase (routes.begin() + index);
             matrix.setRoutes (routes);
@@ -166,7 +166,7 @@ private:
     {
         std::vector<ModRoute> routes;
         routes.reserve ((size_t) rows.size());
-        for (auto* row : rows)
+        for (const auto* row : rows)
         {
             ModRoute r;
             r.source = (ModSource) (row->source.getSelectedId() - 1);

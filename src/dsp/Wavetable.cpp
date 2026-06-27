@@ -146,20 +146,9 @@ void Wavetable::buildFromFrames (const std::vector<std::vector<float>>& frames)
         const float norm = 1.0f / peak;
 
         // Re-render every mip (including 0) with the shared per-frame normalisation.
-        for (size_t mi = 0; mi < mips.size(); ++mi)
-            renderMip (mips[mi].maxHarmonics, mips[mi].data.data() + (size_t) f * N, norm);
+        for (auto& mip : mips)
+            renderMip (mip.maxHarmonics, mip.data.data() + (size_t) f * N, norm);
     }
-}
-
-void Wavetable::buildFromGenerator (int frames,
-                                    const std::function<float (int, int, float)>& fn)
-{
-    const int nf = juce::jmax (2, frames);
-    std::vector<std::vector<float>> data ((size_t) nf, std::vector<float> ((size_t) kFrameSize, 0.0f));
-    for (int f = 0; f < nf; ++f)
-        for (int i = 0; i < kFrameSize; ++i)
-            data[(size_t) f][(size_t) i] = fn (f, nf, (float) i / (float) kFrameSize);
-    buildFromFrames (data);
 }
 
 int Wavetable::mipForFreq (double freqHz, double sampleRate) const noexcept

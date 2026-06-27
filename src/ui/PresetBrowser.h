@@ -65,29 +65,36 @@ public:
 
         menu.showMenuAsync (options, [this, numFactory] (int result)
         {
-            if (result == 0)
-                return;                                  // dismissed
-
-            if (result == kSaveId)
-            {
-                if (onSave) onSave();
-            }
-            else if (result >= kUserBase)
-            {
-                const int idx = result - kUserBase;
-                if (juce::isPositiveAndBelow (idx, userNames.size()) && onLoadUser)
-                    onLoadUser (userNames[idx]);
-            }
-            else if (result >= kFactoryBase)
-            {
-                const int idx = result - kFactoryBase;
-                if (juce::isPositiveAndBelow (idx, numFactory) && onLoadFactory)
-                    onLoadFactory (idx);
-            }
+            handleMenuResult (result, numFactory);
         });
     }
 
 private:
+    // Dispatch a chosen menu id to the matching callback. Split out of the
+    // showMenuAsync closure so the lambda stays small.
+    void handleMenuResult (int result, int numFactory)
+    {
+        if (result == 0)
+            return;                                  // dismissed
+
+        if (result == kSaveId)
+        {
+            if (onSave) onSave();
+        }
+        else if (result >= kUserBase)
+        {
+            const int idx = result - kUserBase;
+            if (juce::isPositiveAndBelow (idx, userNames.size()) && onLoadUser)
+                onLoadUser (userNames[idx]);
+        }
+        else if (result >= kFactoryBase)
+        {
+            const int idx = result - kFactoryBase;
+            if (juce::isPositiveAndBelow (idx, numFactory) && onLoadFactory)
+                onLoadFactory (idx);
+        }
+    }
+
     static constexpr int kFactoryBase = 1;
     static constexpr int kUserBase    = 1000;
     static constexpr int kSaveId      = 9000;

@@ -51,6 +51,7 @@ private:
     void addFactory (const juce::String& name,
                      const std::function<float (int frame, int numFrames, float phase01)>& fn,
                      int numFrames);
+    void addNoiseBand();   // factory table 9 — built from per-frame data, not a single-sample generator
 
     std::vector<std::unique_ptr<Wavetable>> factory;   // stable addresses (vector of ptrs)
     juce::StringArray                       names;     // factory names (without user slot)

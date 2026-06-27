@@ -80,7 +80,7 @@ public:
         g.drawText (title.toUpperCase(), getLocalBounds().reduced (14, 10).removeFromTop (16),
                     juce::Justification::topLeft, false);
     }
-    void setTitle (const juce::String& t) { title = t; repaint(); }
+    void setModuleTitle (const juce::String& t) { title = t; repaint(); }
     // Body rect in the PARENT's coordinate space — controls are children of the
     // panel (not of this module), so they must be laid out in panel coordinates.
     juce::Rectangle<int> body() const { return getBounds().reduced (14).withTrimmedTop (20); }
@@ -100,7 +100,7 @@ namespace zw
 
 //==============================================================================
 // The fixed 1320x900 panel that holds the whole UI.
-class ZWPanel : public juce::Component, private juce::Timer
+class ZWPanel final : public juce::Component, private juce::Timer
 {
 public:
     ZWPanel (ZandersWaveAudioProcessor& p, ZWLookAndFeel& lf)
@@ -319,7 +319,9 @@ public:
         auto oscArea = centre.removeFromTop (380); oscMod.setBounds (oscArea);
         // A/B source selector in the module title row (top-right), so it does not
         // consume the body space used by the display + knob row.
-        { const int selW = 30, selH = 18, selY = oscArea.getY() + 10;
+        { const int selW = 30;
+          const int selH = 18;
+          const int selY = oscArea.getY() + 10;
           oscSelB->setBounds (oscArea.getRight() - 14 - selW,         selY, selW, selH);
           oscSelA->setBounds (oscArea.getRight() - 14 - selW * 2 - 4, selY, selW, selH); }
         { auto b = oscMod.body(); wtDisplay.setBounds (b.removeFromTop (190)); b.removeFromTop (10);
@@ -419,7 +421,7 @@ private:
 
     void loadUserByName (const juce::String& name)
     {
-        auto& pm = proc.getPresetManager();
+        const auto& pm = proc.getPresetManager();
         const int pos = pm.getUserPresetNames().indexOf (name);
         if (pos >= 0)
             loadCombined (pm.getNumFactory() + pos);
@@ -429,7 +431,7 @@ private:
 
     void openBrowser()
     {
-        auto& pm = proc.getPresetManager();
+        const auto& pm = proc.getPresetManager();
         presetTotal = pm.getNumFactory() + pm.getUserPresetNames().size();
         const auto well = juce::Rectangle<int> (470, 14, 300, 28);
         presetBrowser.show (this, localAreaToGlobal (well), presetIndex);
@@ -729,7 +731,8 @@ private:
     // Editable ENV/LFO module index selectors (view-only; not persisted in APVTS).
     // The segmented buttons repoint the existing ENV/LFO controls + ADSR display
     // to the chosen instance's params via selectEnv()/selectLfo() below.
-    int envSel = 1, lfoSel = 1;
+    int envSel = 1;
+    int lfoSel = 1;
     juce::OwnedArray<juce::TextButton> envSelBtn;   // indices 1..3
     juce::OwnedArray<juce::TextButton> lfoSelBtn;   // indices 1..4
 
@@ -741,7 +744,7 @@ private:
         envS->repoint (s, id::env (n, "sustain"));
         envR->repoint (s, id::env (n, "release"));
         adsr.setEnvIndex (s, n);
-        envMod.setTitle (n == 1 ? "ENV1 · AMP" : "ENV" + juce::String (n) + " · MOD");
+        envMod.setModuleTitle (n == 1 ? "ENV1 · AMP" : "ENV" + juce::String (n) + " · MOD");
         envSel = n;
         for (int i = 0; i < envSelBtn.size(); ++i)
             envSelBtn[i]->setToggleState (i + 1 == n, juce::dontSendNotification);
@@ -752,7 +755,7 @@ private:
         lfoRate ->repoint (s, id::lfo (n, "ratehz"));
         lfoDepth->repoint (s, id::lfo (n, "depth"));
         lfoRise ->repoint (s, id::lfo (n, "rise"));
-        lfoMod.setTitle ("LFO" + juce::String (n));
+        lfoMod.setModuleTitle ("LFO" + juce::String (n));
         lfoSel = n;
         for (int i = 0; i < lfoSelBtn.size(); ++i)
             lfoSelBtn[i]->setToggleState (i + 1 == n, juce::dontSendNotification);

@@ -37,8 +37,19 @@ public:
     // Convenience builder for analytic tables: samples `fn` at kFrameSize phase
     // points per frame (fn returns a value in roughly [-1, 1]) and feeds the
     // resulting cycles to buildFromFrames(). Message-thread only (allocates).
-    void buildFromGenerator (int numFrames,
-                             const std::function<float (int frame, int numFrames, float phase01)>& fn);
+    // `fn` is any callable (int frame, int numFrames, float phase01) -> float;
+    // taken as a template parameter rather than std::function to avoid the
+    // type-erasure overhead of invoking it per sample.
+    template <typename Gen>
+    void buildFromGenerator (int frames, Gen&& fn)
+    {
+        const int nf = juce::jmax (2, frames);
+        std::vector<std::vector<float>> data ((size_t) nf, std::vector<float> ((size_t) kFrameSize, 0.0f));
+        for (int f = 0; f < nf; ++f)
+            for (int i = 0; i < kFrameSize; ++i)
+                data[(size_t) f][(size_t) i] = fn (f, nf, (float) i / (float) kFrameSize);
+        buildFromFrames (data);
+    }
 
     int getNumFrames() const noexcept { return numFrames; }
     bool isEmpty()     const noexcept { return numFrames == 0; }

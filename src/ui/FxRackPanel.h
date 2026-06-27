@@ -100,13 +100,13 @@ public:
 
             for (const auto& p : fx.params)
             {
-                juce::Component* c = nullptr;
+                std::unique_ptr<juce::Component> c;
                 if (p.choices.isEmpty())
-                    c = new LabeledKnob (apvts, id::fx (fx.slot, p.suffix), p.label, lnf, true, fx.arc);
+                    c = std::make_unique<LabeledKnob> (apvts, id::fx (fx.slot, p.suffix), p.label, lnf, true, fx.arc);
                 else
-                    c = new LabeledCombo (apvts, id::fx (fx.slot, p.suffix), p.label, p.choices, lnf);
-                strip->controls.add (c);
-                strip->addAndMakeVisible (c);
+                    c = std::make_unique<LabeledCombo> (apvts, id::fx (fx.slot, p.suffix), p.label, p.choices, lnf);
+                strip->addAndMakeVisible (*c);
+                strip->controls.add (std::move (c));
             }
         }
 
@@ -134,8 +134,7 @@ public:
         auto b = getLocalBounds().reduced (10, 8);
 
         auto pickerRow = b.removeFromTop (24);
-        const int n = pickers.size();
-        if (n > 0)
+        if (const int n = pickers.size(); n > 0)
         {
             const int pw = pickerRow.getWidth() / n;
             for (auto* p : pickers) p->setBounds (pickerRow.removeFromLeft (pw).reduced (2, 0));
@@ -166,7 +165,7 @@ private:
         std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enAtt;
     };
 
-    void select (int which)
+    void select (int which) const
     {
         for (int i = 0; i < strips.size(); ++i)
             strips[i]->setVisible (i == which);

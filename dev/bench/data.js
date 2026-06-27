@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782486981394,
+  "lastUpdate": 1782570650237,
   "repoUrl": "https://github.com/Zanders214/synth",
   "entries": {
     "ZandersWave DSP": [
@@ -703,6 +703,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "FX chain (10 slots)",
             "value": 238360.268,
+            "unit": "ns/block"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "152227414+Zanders214@users.noreply.github.com",
+            "name": "Dennis Zanders",
+            "username": "Zanders214"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8cbd168775fcd6c5ac9ad67f3aae20adbddce25f",
+          "message": "Resolve 24 open SonarCloud issues (21 fixes + 3 justified suppressions) (#27)\n\nAll 24 open issues live in code added by PRs #17-#26; everything older is\nalready fixed or triaged per sonar-project.properties.\n\nCode fixes:\n- FxRackPanel.h: std::make_unique instead of raw new (S5025 x2); if-init\n  statement (S6004); select() declared const (S5817).\n- PluginEditor.cpp: rename Module::setTitle -> setModuleTitle so it no longer\n  hides juce::Component::setTitle (S1242); mark ZWPanel final so the ctor's\n  setOscSource -> resized() path is unambiguous (S1699); one declaration per\n  statement (S1659 x2); reference-to-const for pm (S5350 x2).\n- WavetableLibrary: extract the 10 analytic generators into named functions and\n  the Noise Band block into addNoiseBand(), dropping buildFactory's cognitive\n  complexity from 40 to ~1 (S3776) with byte-identical output; std::array for the\n  Metallic partials/decays (S5945 x2); auto for a redundantly-typed local (S5827).\n- ModMatrixPanel.h: explicit Row ctor (S1709); split declaration (S1659);\n  if-init statement (S6004); pointer-to-const in commit() (S5350).\n- Wavetable: range-for over mips (S5566); buildFromGenerator is now a template\n  rather than taking a std::function (S5213).\n- PresetBrowser.h: extract the 21-line menu lambda into handleMenuResult (S1188).\n\nJustified suppressions (sonar-project.properties, in the existing style):\n- S954 PluginEditor.cpp: the FxRackPanel.h include must follow LabeledKnob's\n  definition; the mid-file placement is deliberate and documented in-file.\n- S2245 WavetableLibrary.cpp: the std::mt19937 builds a reproducible \"Noise Band\"\n  wavetable from a fixed seed; not a security context.\n- S5414 PresetBrowser.h: public std::function callbacks are the deliberate\n  JUCE-style notification surface (cf. juce::Button::onClick), same rationale as\n  the existing acc1/acc2 suppressions.\n\n\nClaude-Session: https://claude.ai/code/session_01UFGHnVLTGNSktPR2KHa92s\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-27T16:27:26+02:00",
+          "tree_id": "09b35abeda41ae9957eb873e2583f16f0aecbb14",
+          "url": "https://github.com/Zanders214/synth/commit/8cbd168775fcd6c5ac9ad67f3aae20adbddce25f"
+        },
+        "date": 1782570649972,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Full graph (16 voices + 10 FX)",
+            "value": 386696.978,
+            "unit": "ns/block"
+          },
+          {
+            "name": "Full graph DSP load @48k/512",
+            "value": 3.625,
+            "unit": "%"
+          },
+          {
+            "name": "Voice render (16 voices)",
+            "value": 144204.479,
+            "unit": "ns/block"
+          },
+          {
+            "name": "FX chain (10 slots)",
+            "value": 241500.117,
             "unit": "ns/block"
           }
         ]
